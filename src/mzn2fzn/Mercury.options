@@ -1,19 +1,4 @@
-# Include the automatically generated parameters file.  This is created by
-# running `configure' in the top-level directory (possibly after running
-# autoconf).
-
-include ../../../Mercury.options.common
-
-# The variables above can also be overridden by the contents of the
-# following file in the current directory.
--include Mercury.params
-
-GRADEFLAGS	= --grade $(NOTR_GRADE)
-MCFLAGS         = $(MCFLAGS_STD)				\
-		  $(OPTIMIZE)
-
-# We don't use G12_FRONTEND_DIR here as that doesn't work on MinGW.
-include ../frontend/Frontend.workarounds
+include ../minizinc-frontend/Frontend.workarounds
 
 
 # NOTE: any workarounds here also need to be added to
