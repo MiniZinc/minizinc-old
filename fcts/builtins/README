@@ -1,0 +1,18 @@
+This directory contains tests for all of FlatZinc's built-in operations.
+They are split into five subdirectories:
+
+        bool    - built-in operations on bools.
+        int     - built-in operations on ints.
+        float   - built-in operations on floats.
+        set     - built-in operations on sets.
+        array   - built-in operations on arrays.
+
+Each test case exercises a single built-in operation.  The file containing
+the test case is the name of that built-in operation (plus the usual .fzn
+extension).  Where necessary subsequent tests of a built-in operation are
+placed in files named according to the following scheme:
+
+        <built-in op name>_<n>.fzn
+
+where <n> is the next available positive integer (beginning with 2).
+

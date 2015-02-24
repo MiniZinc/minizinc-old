@@ -1,0 +1,9 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fd_canon
+% RUNS ON fzn_fdlp_canon
+
+var set of 0..1: x1 :: output_var;
+var set of 1..2: x2 :: output_var;
+constraint set_lt({}, {1});
+constraint set_lt(x1, x2);
+solve satisfy;

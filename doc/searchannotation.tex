@@ -1,0 +1,652 @@
+\documentclass[a4paper]{article}
+\usepackage{alltt}
+\usepackage[hmargin=2cm,vmargin=2.5cm]{geometry}
+\usepackage{fancyvrb}
+% Separate paragraphs with a blank line rather than indentating the
+% first line.
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\baselineskip}
+
+%\input{version.tex}
+
+\newcommand{\minizinc}		{Mini\-Zinc}
+\newcommand{\flatzinc}		{Flat\-Zinc}
+
+% This is some LaTeX voodoo to make verbatim use a small font.
+\makeatletter
+\g@addto@macro\@verbatim\small
+\makeatother
+
+% FlatZinc uses the MiniZinc version number.
+%
+\title{Search Annotations in \flatzinc\\
+\smallskip
+%\Large{Version \mznversion}
+\Large{\textbf{Third External Draft}}
+}
+\author{G12, National ICT Australia (NICTA), Victoria, Australia}
+\date{}
+
+%=============================================================================%
+
+\newcommand{\fz}[1]{\texttt{#1}}
+\newcommand{\fzsf}[1]{\ensuremath{\mathsf{#1}}}
+\newcommand{\fzra}{\ensuremath{r_1}}
+\newcommand{\fzrb}{\ensuremath{r_2}}
+\newcommand{\fzxa}{\ensuremath{x_1}}
+\newcommand{\fzxb}{\ensuremath{x_2}}
+\newcommand{\fzxk}{\ensuremath{x_k}}
+\newcommand{\fzxi}{\ensuremath{x_i}}
+\newcommand{\fzya}{\ensuremath{y_1}}
+\newcommand{\fzyb}{\ensuremath{y_2}}
+\newcommand{\fzyk}{\ensuremath{y_k}}
+\newcommand{\fzyi}{\ensuremath{y_i}}
+\newcommand{\fzn}{\ensuremath{n}}
+\newcommand{\fzv}{\ensuremath{v}}
+\newcommand{\fzvj}{\ensuremath{v[j]}}
+\newcommand{\fzi}{\ensuremath{i}}
+\newcommand{\fzj}{\ensuremath{j}}
+\newcommand{\fzk}{\ensuremath{k}}
+\newcommand{\fzpredname}{\fzsf{predname}}
+\newcommand{\fztype}{\fzsf{type}}
+\newcommand{\fzparamtype}{\fzsf{paramtype}}
+\newcommand{\fzvartype}{\fzsf{vartype}}
+\newcommand{\fzargname}{\fzsf{argname}}
+\newcommand{\fzvarname}{\fzsf{varname}}
+\newcommand{\fzparamname}{\fzsf{paramname}}
+\newcommand{\fzarg}{\fzsf{arg}}
+\newcommand{\fzobjfn}{\fzsf{objfn}}
+\newcommand{\fzvars}{\fzsf{vars}}
+\newcommand{\fzliteral}{\fzsf{literal}}
+\newcommand{\fzarrayliteral}{\fzsf{arrayliteral}}
+\newcommand{\fzannotation}{\fzsf{annotation}}
+\newcommand{\fzannotationname}{\fzsf{annotationname}}
+\newcommand{\fzannotationarg}{\fzsf{annotationarg}}
+\newcommand{\fzsearchannotation}{\fzsf{search\_annotation}}
+\newcommand{\fzvarchoiceannotation}{\fzsf{variable\_selection}}
+\newcommand{\fznassignmentannotation}{\fzsf{branching\_decision}}
+% \newcommand{\fzstrategyannotation}{\fzsf{strategyannotation}}
+\newcommand{\fzbnf}{\fzsf{::=}}
+\newcommand{\fzalt}{\fzsf{|}}
+
+\newcommand{\vblabel}[1]	{\large\textbf{#1}}
+\newcommand{\vbcmd}		{>}
+\newcommand{\vbout}		{\slshape}
+
+\DefineVerbatimEnvironment{Zinc}{Verbatim}
+    {samepage,frame=single,framesep=0.25em,xleftmargin=0.15em,xrightmargin=0.15em}
+
+%=============================================================================%
+
+\begin{document}
+
+\maketitle
+
+% \newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+
+This document is the specification of the \flatzinc{} search annotations.
+Search annotations are optional suggestions to the solver concerning how search
+should proceed.  An implementation is free to ignore any annotations it does
+not recognise, although it should print a warning on the standard error stream
+if it does so.
+
+\section{Basic Tree Search}
+\label{sec:basic}
+%While a \flatzinc{} implementation is free to ignore any or all annotations in
+%a model, it is recommended that implementations at least recognize the
+%following standard search annotations for solve goals.
+
+A basic search annotation, \fzsearchannotation{}, can be one of the following:
+
+\begin{tabular}{l}
+\fz{
+\{bool, int, set\}\_search(\fzvars, \fzvarchoiceannotation, \fznassignmentannotation)}
+\end{tabular}
+
+where \fzvars{} is an array variable name or an array literal specifying the
+variables of the corresponding type to be assigned (ints, bools, or sets
+respectively).
+
+The search annotation dealing with float variables takes as additional argument the desired \emph{precision}:
+
+\begin{tabular}{l}
+\fz{
+float\_search(\fzvars, prec, \fzvarchoiceannotation, \fznassignmentannotation)
+}
+\end{tabular}
+
+The search on floats terminates as soon as the precision is within \texttt{prec}.
+
+Note that all searches presented here must be \emph{complete} (i.e., exhaustive search). Hence, if the defined search only considers a subset of the variables and
+fixing all of them to values does not yield a complete assignment (e.g.\ by
+constraint propagation), \emph{default} search is invoked to fix all remaining
+unassigned variables.  For a specification of default search please refer to
+Section~\ref{defaultsearch}. Note that search applied on the empty set of variables 
+succeeds. Section~\ref{sec:manipulators} introduces several manipulators to the searches introduced here. 
+
+The search annotations \fz{\{int, set\}\_search\_all} do not take \fzvars{} as an
+argument.  Instead it causes search to consider all integer/set variables contained
+in a given problem instance, including auxiliary ones introduced during model
+transformation.
+
+\begin{tabular}{l}
+\fz{
+\{int, set\}\_search\_all(\fzvarchoiceannotation, \fznassignmentannotation)
+}
+\\
+\end{tabular}
+
+
+The arguments \fz{\fzvarchoiceannotation} and \fz{\fznassignmentannotation}
+used in the search annotation are explained in Sections~\ref{sec:varselect}
+and~\ref{sec:valueselect}. 
+
+\subsection{Variable Selection}
+\label{sec:varselect}
+\fzvarchoiceannotation{} specifies how the next variable to be branched on is
+chosen at each choice point.  Possible choices are as follows:
+
+\begin{tabular}{p{.45\linewidth}p{.5\linewidth}}
+\fz{\{reverse\_\}input\_order}
+& Choose variables in the (reverse) order they appear in \fzvars.\\
+\fz{random\_order}
+& Choose variables at random (based on uniform distribution) from \fzvars.\\
+\fz{\{min,max\}\_\{lb,ub\}}
+& Choose the variable with the smallest/largest lower/upper bound.\\
+\fz{\{min,max\}\_dom\_size}
+& Choose the variable with the smallest/largest domain.\\
+\fz{\{min,max\}\_degree}
+& Choose the variable that appears in the smallest/largest number of
+  constraints.\\
+\fz{\{min,max\}\_\{lb,ub\}\_regret}
+& Choose the variable with the smallest/largest difference between the two
+smallest/largest values in its domain.\\
+\fz{\{min,max\}\_dom\_size\_degree}
+& Choose the variable with the smallest/largest ratio of domain size and degree.\\
+\fz{\{min,max\}\_dom\_size\_weighted\_degree}
+& Choose the variable with the smallest/largest ratio of domain size and
+  weighted degree.\\
+\fz{\{min,max\}\_impact}
+& Choose the variable that caused the smallest/highest search space reduction
+  in the past.\\
+\fz{\{min,max\}\_activity}
+& Choose the variable that has minimal/maximal activity score (e.g., based on VSIDS).\\
+\end{tabular}
+
+Note that implicitly tie breaking based on \texttt{input\_order} takes place when several variables have exactly the same score according to the used variable selection strategy. It is also possible to use the annotation \texttt{default}
+as variable selection strategy which results in employing the default 
+variable selection strategy  (which might differ depending on the type of the variable).
+
+Multiple variable selection strategies can be combined using the \fz{\fzvarchoiceannotation} constructor \texttt{seq\_vss}. It selects a variable according to a sequence of strategies, whose relevance decreases from left to right. 
+
+\begin{tabular}{l}
+\fz{
+seq\_vss([\fzvarchoiceannotation, \ldots, \fzvarchoiceannotation])
+}
+\end{tabular}
+
+For instance, the following statement uses the variable selection strategy \texttt{min\_lb} with tie breaking based on the \texttt{reverse\_input\_order} of the variables:
+
+\begin{tabular}{l}
+\fz{
+seq\_vss([min\_lb, reverse\_input\_order])
+}
+\end{tabular}
+
+Note that while \texttt{input\_order} is implicitly used to perform tie breaking, it will never be applied in this example.
+ 
+The following annotations on variable ordering strategies can be used to 
+combine and manipulate variable scores. 
+The first annotation can be used to \emph{weigh} the score of the employed  \fzvarchoiceannotation:
+
+\begin{tabular}{l}
+\fz{
+weight\_score(\fzvarchoiceannotation, <Weight>)
+}
+\end{tabular}
+where \texttt{<Weight>} denotes a float number.
+
+The score of the used  \fz{\fzvarchoiceannotation} is multiplied by the given \texttt{<Weight>}. Note that the resulting score is rounded to the closest integer in order to promote further tie breaking.
+The second annotation can be used to sum multiple individual scores and the resulting score is
+then used to rank the variables accordingly:
+
+\begin{tabular}{l}
+\fz{
+sum\_score([\fzvarchoiceannotation, \ldots, \fzvarchoiceannotation])
+}
+\end{tabular}
+
+In order to use the weighted sum of the individual scores to rank the variables can then be formulated as follows:
+
+\begin{tabular}{l}
+\fz{
+sum\_score([weight\_score(\fzvarchoiceannotation, <Weight>), \ldots, weight\_score(\fzvarchoiceannotation, <Weight>)])
+}
+\end{tabular}
+
+
+\subsection{Branching Decisions}
+\label{sec:valueselect}
+\fznassignmentannotation{} specifies how the values of the selected variable
+should be constrained.  Possible choices are as follows:
+
+\begin{tabular}{p{.35\linewidth}p{.6\linewidth}}
+\fz{\{assign,exclude\}\_\{lb,ub\}}
+& Assign/exclude the smallest/largest value in the variable's domain:\\
+& $x = \min\{d(x)\}$ $\swarrow\searrow$ $x \neq \min\{d(x)\}$ or\\
+& $x = \max\{d(x)\}$ $\swarrow\searrow$ $x \neq \max\{d(x)\}$ or\\
+& $x \neq \min\{d(x)\}$ $\swarrow\searrow$ $x = \min\{d(x)\}$ or\\
+& $x \neq \max\{d(x)\}$ $\swarrow\searrow$ $x = \max\{d(x)\}$, resp.\\
+
+\fz{\{assign,exclude\}\_mean}
+& Assign/exclude the mean value in a variable's domain.\\
+& $x=m$  $\swarrow\searrow$ $x \neq m$ or \\
+& $x\neq m$  $\swarrow\searrow$ $x=m$, resp., 
+where $m=\left\lfloor\frac{\min\{d(x)\} + \max\{d(x)\}}{2}\right\rfloor$ \\
+
+
+\fz{\{assign,exclude\}\_median}
+& Assign/exclude the median value in a variable's domain.\\
+& $x=m$  $\swarrow\searrow$ $x \neq m$ or \\
+& $x\neq m$  $\swarrow\searrow$ $x=m$, resp., 
+where $i=\left\lfloor\frac{|d(x)| + 1}{2}\right\rfloor$, \mbox{$d(x)=\{a_1,...,a_n\}$} with $a_1 < a_2 < \ldots a_n$, and $m=a_i$.\\
+
+\fz{\{assign,exclude\}\_random}
+& Assign/exclude a value uniformly\footnote{Other distributions like Gaussian could be considered as well.} sampled from the variable's domain.\\
+& $x=r$ $\swarrow\searrow$ $x \neq r$ or\\
+& $x \neq r$ $\swarrow\searrow$ $x = r$, resp., where $r=random\{d(x)\}$\\
+
+\fz{\{assign,exclude\}\_impact\_\{min,max\}}
+& Assign/exclude the value in the variable's domain with the minimal/maximal impact score.\\
+
+\fz{\{assign,exclude\}\_activity\_\{min,max\}}
+& Assign/exclude the value in the variable's domain with the minimal/maximal activity score (e.g., based on VSIDS).\\
+
+\fz{\{include,exclude\}\_\{min,max\}}
+& Include/exclude the smallest/largest uncertain domain value of a set variable:\\
+& $x = d_s(x) \cup \{d\}$ $\swarrow\searrow$ $x= d_s(x)-\{d\}$  or\\  
+& $x = d_s(x) -\{d\}$ $\swarrow\searrow$ $x = d_s(x) \cup \{d\}$, resp., where \\
+& $d=\min\{\max\{d_s(x)\} \setminus \min\{d_s(x)\} \}$ or \\
+& $d=\max\{\max\{d_s(x)\} \setminus \min\{d_s(x)\} \}$, resp.\\
+
+\fz{enumerate\_\{lb,ub\}}
+& Enumerate values from the smallest to the largest/from the largest to
+  the smallest in the variable's domain.\\
+& $x=a_1\downarrow x=a_2 \downarrow \ldots \downarrow x=a_n$ or\\
+& $x=a_n\downarrow x=a_{n-1} \downarrow \ldots \downarrow x=a_1$, resp.,
+where \mbox{$d(x)=\{a_1,...,a_n\}$} with $a_1 < a_2 < \ldots a_n$ \\
+
+\fz{bisect\_\{low,high\}}
+& Bisect the variable's domain, excluding the upper/lower half first.\\
+& $x \leq a $ $\swarrow\searrow$ $ x>a$ or\\
+& $x \geq  a $ $\swarrow\searrow$ $ x<a$, resp.,
+where $a=\left\lfloor\frac{\min\{d(x)\} + \max\{d(x)\}}{2}\right\rfloor$, resp.\\
+
+\fz{bisect\_median\_\{low,high\}}
+& Bisect the variable's domain based on the median, excluding the upper/lower half first.\\
+& $x \leq m $ $\swarrow\searrow$ $ x>m$ or\\
+& $x \geq m $ $\swarrow\searrow$ $ x<m$, resp.,
+where $i=\left\lfloor\frac{|d(x)| + 1}{2}\right\rfloor$, \mbox{$d(x)=\{a_1,...,a_n\}$} with $a_1 < a_2 < \ldots a_n$ and $m=a_i$.\\
+
+\fz{bisect\_random\_\{low,high\}}
+& Bisect the variable's domain by splitting on a value selected at random excluding upper/lower half first.\\
+& $x \leq r $ $\swarrow\searrow$ $ x>r$ or\\
+& $x \geq r $ $\swarrow\searrow$ $ x<r$, resp., where $r=random\{d(x)\}$\\
+
+\fz{bisect\_interval\_\{low,high\}}
+& If the variable's domain consists of several intervals,
+split the domain into the interval containing the smallest/largest values
+and the remaining intervals.
+Otherwise perform \fz{bisect\_low}/\fz{bisect\_high} on the variable's domain.\\
+& $x \in [a,b]$ $\swarrow\searrow$ $x \not\in [a,b]$ or\\
+& $x \not\in [a,b]$ $\swarrow\searrow$ $x \in [a,b]$, resp.,
+  where $[a,b] \subset d(x)$ and $\exists.d\in[a,b]$ s.t. $d=min(d(x))$ or  $d=max(d(x))$ resp.\\
+
+\fz{bisect\_impact\_\{min,max\}}
+& Bisect the variable's domain, excluding the half with minimal/maximal impact score first.\\
+
+\fz{bisect\_activity\_\{min,max\}}
+& Bisect the variable's domain, excluding the half with minimal/maximal activity score first.\\
+&
+\end{tabular}
+
+Of course, some branching decision specifications may be the same strategy;
+e.g., \fz{bisect\_low} and \fz{enumerate\_lb} in \fz{bool\_search}. In addition,
+note that \fz{bisect\_\{low,high\}} corresponds to \fz{bisect\_mean\_\{low,high\}}.
+
+A branching decision is applied just once, and the variable may thus not yet be
+fixed as a result (e.g.,  with domain bisection).  This variable may or may not
+be selected immediately afterwards, depending on the specified variable
+selection. It is also possible to use the annotation \texttt{default}
+as domain splitting strategy which results in employing the default 
+domain splitting strategy (which might differ depending on the type of the variable).
+
+In addition, the user can specify a single strategy of the available domain
+splitting strategies which then will be applied to all variables branched on.
+
+It is also possible to provide multiple domain splitting strategies using the
+annotation \texttt{dss} (which is of type \fz{\fznassignmentannotation)}).
+When specifying this annotation a domain splitting strategy is picked at
+\emph{random} per variable from the specified set of strategies\footnote{One
+could also think of correlating the type of variable (e.g., based on domain
+size) with particular domain splitting strategies.}.
+
+\begin{tabular}{l}
+\fz{dss([\fznassignmentannotation, \ldots,\fznassignmentannotation])}
+\end{tabular}
+
+
+%=============================================================================%
+
+
+\section{Complex Search Constructs}
+\label{sec:manipulators}
+
+In this section we introduce several search templates that can be used to
+construct more complex searches (e.g., support of interaction between
+searches).  Note that all search templates presented here are of type
+\fzsearchannotation{} and are therefore applicable whenever the standard
+\fzsearchannotation{} is. 
+Please note that some search manipulators introduced here cause search to be \emph{incomplete}.
+
+\subsection{Sequential Search}
+
+\emph{Sequential Search} defines multiple searches on variable subsets
+$X_1, X_2, \ldots, X_n$ of the decision variables $X$ in the given problem
+instance in a particular order.  Typically, $X_1 \cup X_2 ...  \cup X_n = X$.
+The searches are executed in the specified order.  If a search
+fails, sequential search backtracks to the previous search in the sequence.
+
+\begin{Zinc}[label={\vblabel{Sequential Search}}]
+seq_search([<SearchAnn(X1)>, <SearchAnn(X2)>, ... <SearchAnn(Xn)>])
+\end{Zinc}
+
+As an example consider the following sequential search annotation:
+
+\begin{Zinc}[label={\vblabel{Example: Sequential Search}}]
+seq_search([search(x1, min_dom_size_weighted_degree, enumerate_lb),
+            search(x2, min_dom_size, bisect_low)
+           ])
+\end{Zinc}
+
+First search takes places on the variables in $x1$ and once all variables
+contained in $x1$ have been assigned, the search on $x2$ is invoked.  If the
+search on $x2$ fails, then the sequential search annotation backtracks to the
+previous search on $x1$ in order to determine a new setting of the variables in
+$x1$.  If there are no more feasible assignments left among the variables in
+$x1$, sequential search terminates without a solution.
+
+
+\subsection{Parallel Search}
+
+If possible the searches specified inside of the \emph{Parallel Search}
+annotation are invoked in parallel and this search construct terminates as soon
+as one of the specified searches is able to determine an answer to the given
+problem%
+\footnote{In the current implementation the searches are executed sequentially
+in the order as they are specified.  Hence, the first successful search in the
+sequence causes parallel search to terminate.}.
+Note that all searches inside the \emph{Parallel Search} annotation are
+independent of each other and no backtracking between searches as in sequential
+search takes place.
+
+\begin{Zinc}[label={\vblabel{Parallel Search}}]
+par_search([<SearchAnn>, <SearchAnn>, ..., <SearchAnn>])
+\end{Zinc}
+
+
+\subsection{Limited Search}
+
+\emph{Limited Search} bounds the search process by measures like time (in
+seconds), number of failures or number of search nodes.  Limits may be
+nested; a search is always constrained by the tightest limit it is
+scoped by.  The \emph{limit} construct is also of type \fzsearchannotation{}.
+
+\begin{Zinc}[label={\vblabel{Limited Search}}]
+limit_search(<Measure>, <Limit>, <SearchAnn>)
+\end{Zinc}
+
+\emph{Measure} can take one of the following values: 
+
+\begin{tabular}{p{.10\linewidth}p{.6\linewidth}}
+\fz{fails} 
+& Number of failures/conflicts\\
+\fz{nodes} 
+& Number of search nodes traveresed\\
+\fz{time}
+& Time in seconds
+\end{tabular}
+
+
+\subsection{Restarting Search}
+
+Any search scoped by a restart annotation backtracks to the root every time the
+restart condition is hit.  As with \emph{Limited Search} restarts can be
+defined on several measures (e.g., number of failures).  Note that in contrast
+to limits, restarts cannot occur nested.  In general, the restart annotation
+has the following format:
+
+\begin{Zinc}[label={\vblabel{Restarting Search}}]
+restart_<Type>(<Type-Specific-Parameters>, <SearchAnn>)
+\end{Zinc}
+
+The following types of restart strategies are supported:
+\emph{Geometric} and \emph{Luby} based restarts:
+
+\begin{Zinc}[label={\vblabel{Geometrically Restarting Search}}]
+restart_geometric(<Increment>, <InitialLimit>, <Measure>, <SearchAnn>)
+\end{Zinc}
+
+\begin{Zinc}[label={\vblabel{Luby Restarting Search}}]
+restart_luby(<InitialValue>, <MaximalValue>, <Measure>, <SearchAnn>)
+\end{Zinc}
+
+
+\subsection{Sample Search}
+
+The \emph{Sample Search} construct allows information to be passed to
+variable ordering heuristics\footnote{One could also consider sampling for
+value ordering heuristics or for both ordering strategies.} from one search to
+a subsequent search.  The aim of this template is to enable the collection of
+information relevant to a variable ordering heuristic in order to support
+``warm-starts''.  The sample search template takes a \fzvarchoiceannotation,
+and the corresponding information is collected during the first limited search.
+Note that variable selection heuristics that depend on static information only
+are not a sensible choice (e.g., \texttt{input\_order}).
+
+\begin{Zinc}[label={\vblabel{Sample Search}}]
+sample_search([<VarChoiceAnn>, limit_search(<Measure>, <Limit>, <SearchAnn>), <SearchAnn>])
+\end{Zinc}
+
+The following is an example for an application of the sample search template:
+
+\begin{Zinc}[label={\vblabel{Example: Sample Search}}]
+sample_search(impact,
+    limit_search(time, 5,
+        restart_geometric(1.15, 200.0, nodes,
+            int_search(x, min_lb, dss([bisect_low, bisect_high]))))
+    int_search(x, seq_vss([impact, min_dom_size]), enumerate_lb)
+)
+\end{Zinc}
+
+This sample search first performs a search limited by $5$ seconds that makes
+use of restarts and branches on variables in $x$.  During this first search
+information relevant to the \texttt{impact} heuristic is gathered (e.g., search
+space reduction per variable).  The second search accesses this information to
+perform its initial branching decisions.  Note, however that this information
+is continued to be updated as in the regular \texttt{impact} heuristic.
+
+
+\subsection{Backdoor Search}
+
+The backdoor search annotation tries to determine a subset of variables that
+simplify the problem in an essential fashion once they are fixed to a value.
+In order to determine such variables, a limited search is performed to collect
+information on the variables in the given problem instance.  As a result, the
+variables are partitioned into \emph{backdoor} variables and \emph{remaining}
+variables.  Then a sequential search is executed --- first on \emph{backdoor}
+variables and second on \emph{remaining} variables.
+
+In the following specification of \emph{Backdoor Search}, $X$ denotes an
+arbitrary subset of the variables contained in the problem instance, and
+'\fz{SearchAnn(X)}' denotes a normal search construct.  The
+annotations '\fz{backdoor\_vars}' and '\fz{remaining\_vars}' are replaced by
+\emph{backdoor}/\emph{remaining} variables respectively based on the
+information collected during '\fz{SearchAnn(X)}'.  The variables in $X$ are sorted
+by the given \fzvarchoiceannotation{} variable score after the first search has
+terminated.  The highest ranked variables that fall within the given
+\emph{ratio} according to the used variable ordering heuristic correspond to
+the set of \emph{backdoor} variables $B$ branched on in the first search in the
+sequential search sequence, while the \emph{remaining} variables $R$ are the
+ones branched on in second search in the sequential search sequence
+(with $X = B \cup R$).
+
+\begin{Zinc}[label={\vblabel{Backdoor Search}}]
+backdoor_search(<VarChoiceAnn>, <Ratio>,
+    limit_search(<Measure>, <Limit>, <SearchAnn(X)>),
+        seq_search([
+            <SearchAnn(backdoor_vars)>,
+            <SearchAnn(remaining_vars)>,
+        ])
+)
+\end{Zinc}
+
+\subsection{Limited Discrepancy Search}
+This manipulator results in restricting the scoped search to the specified 
+discrepancy.
+
+\begin{tabular}{l}
+\fz{
+lds(<Discrepancy>, <SearchAnn>)
+}
+\end{tabular}
+
+In the following we show an example usages of the \fz{lds} search manipulator.
+This example limits the search scoped by the \fz{lds} manipulator to only 
+allow search with discrepancy $1$:
+\begin{Zinc}[label={\vblabel{Example: Limited Discrepancy Search}}]
+% Restrict scoped search on X to discrepancy 1
+lds(1, int_search(X, min_degree,  bisect_low)  
+\end{Zinc}
+
+\subsection{Assign Once}
+This manipulator results in assigning all free variables to a value according
+to the given search annotation. An assignment is only made once, and backtracking
+does not take place.
+
+\begin{tabular}{l}
+\fz{
+once<SearchAnn>)
+}
+\end{tabular}
+
+In the following we show example usages of the \fz{once} search manipulator.
+The first example shows how do define a standard search on the variables $X$, and then how to fix the variables $Y$ (and not to perform backtracking on variables in $Y$) using \fz{once}:
+
+\begin{Zinc}[label={\vblabel{Example 1: Search Once}}]
+seq_search([
+    % Search that solves problem by branching on X
+    int_search(X, min_degree,  bisect_low),  
+    % Assign value (here: lower bound) to all remaining variables Y 
+    once(int_search(Y, min_dom_size, min_lb)) 
+]).
+\end{Zinc}
+The second  example shows how do define a standard search on the variables $X$, then how to fix the variables $Y$ (and not to perform backtracking on variables in $Y$) using \emph{once}, and then to search on variables $Z$. When search on $Z$ fails, \fz{seq\_search} backtracks directly over all variables in $Y$ to the search on X:
+
+\begin{Zinc}[label={\vblabel{Example 2: Search Once}}]
+seq_search([
+    % Search that solves part of the problem involving X
+    int_search(X, min_degree,  bisect_low)
+    % Assign value (here: lower bound) to all remaining variables Y
+    once(Y, min_dom_size, min_lb),
+    % Search that solves part of the problem involving Z
+    int_search(Z, min_degree,  bisect_low)
+]).
+\end{Zinc}
+
+
+%=============================================================================%
+
+
+\section{Default Search}
+\label{defaultsearch}
+
+Default Search is \flatzinc{} implementation dependent.
+It is typically subject to change over time (e.g., by determining more
+robust search strategies).
+Default search is used when one of the following cases occurs:
+\begin{itemize}
+\item no search annotation specified in the instance;
+\item the given search annotation is ignored
+      (e.g., because it is not supported);
+\item after applying the given search annotation unfixed variables remain.
+\end{itemize}
+
+The search specification used for default search in G12 is currently the
+following:
+
+\begin{Zinc}[label={\vblabel{Default Search}}]
+seq_search([
+    int_search(x_i, min_dom_size, bisect_low),
+    bool_search(x_b, input_order, enumerate_lb),
+    set_search(x_s, min_dom_size, enumerate_lb)
+])
+\end{Zinc}
+where \fz{x\_i, x\_b, x\_s} denote all currently unassigned variables
+of the respective type in the given problem instance.
+
+
+%=============================================================================%
+
+
+\section{Examples}
+
+\begin{Zinc}[label={\vblabel{Search on X with Variable/Domain Ordering}}]
+int_search(x, min_dom_size_weighted_degree, enumerate_lb)
+\end{Zinc}
+
+\begin{Zinc}[label=%
+{\vblabel{Search on All Variables with Multiple Variable/Domain Orderings}}]
+int_search_all(seq_vss([max_degree, min_lb]), dss([bisect_low, bisect_high]))
+\end{Zinc}
+
+\begin{Zinc}[label={\vblabel{Geometrically Restarting Search}}]
+restart_geometric(100, 1.05, fails,
+    int_search(x, min_dom_size_weighted_degree, enumerate_lb)
+)
+\end{Zinc}
+
+\begin{Zinc}[label={\vblabel{Search with Nested Limits}}]
+limit(time, 100,
+    parallel_search([limit(fails, 1000,
+        int_search(x, min_dom_size, bisect_low)),
+        restart_geometric(100, 1.05, fails,
+            int_search(y, impact, enumerate_lb)
+        )
+    ])
+)
+\end{Zinc}
+
+\begin{Zinc}[label={\vblabel{Backdoor Search Example}}]
+backdoor_search(dom_min_weighted_degree, 0.1,
+    limit_search(time, 10,
+        restart_geometric(1.15, 200.0, nodes,
+            search(x, min_dom_size_weighted_degree, bisect_low)
+        )
+    ),
+    seq_search([
+        search(backdoor_vars, min_dom_size, bisect_low)
+        search(remaining_vars, input_order, enumerate_lb)
+    ])
+)
+\end{Zinc}
+
+
+\end{document}
+

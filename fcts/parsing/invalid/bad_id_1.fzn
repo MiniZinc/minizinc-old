@@ -1,0 +1,2 @@
+var bool: _;
+solve satisfy;

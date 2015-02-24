@@ -1,0 +1,1336 @@
+% flatzinc-summary.tex
+% vim: ft=tex ts=4 sw=4 et
+% Ralph Becket
+% Thu Apr  9 14:37:26 EST 2009
+
+\documentclass[a4paper]{article}
+\usepackage{alltt}
+\usepackage[hmargin=3cm,vmargin=3.5cm]{geometry}
+
+% Separate paragraphs with a blank line rather than indentating the
+% first line.
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\baselineskip}
+
+\input{version.tex}
+
+% This is some LaTeX voodoo to make verbatim use a small font.
+\makeatletter
+\g@addto@macro\@verbatim\small
+\makeatother
+
+% FlatZinc uses the MiniZinc version number.
+%
+\title{Specification of FlatZinc \\
+\smallskip
+\Large{Version \mznversion}
+}
+\author{Ralph Becket}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\newcommand{\fz}[1]{\texttt{#1}}
+\newcommand{\fzsf}[1]{\ensuremath{\mathsf{#1}}}
+\newcommand{\fzra}{\ensuremath{r_1}}
+\newcommand{\fzrb}{\ensuremath{r_2}}
+\newcommand{\fzxa}{\ensuremath{x_1}}
+\newcommand{\fzxb}{\ensuremath{x_2}}
+\newcommand{\fzxk}{\ensuremath{x_k}}
+\newcommand{\fzxi}{\ensuremath{x_i}}
+\newcommand{\fzya}{\ensuremath{y_1}}
+\newcommand{\fzyb}{\ensuremath{y_2}}
+\newcommand{\fzyk}{\ensuremath{y_k}}
+\newcommand{\fzyi}{\ensuremath{y_i}}
+\newcommand{\fzn}{\ensuremath{n}}
+\newcommand{\fzv}{\ensuremath{v}}
+\newcommand{\fzvj}{\ensuremath{v[j]}}
+\newcommand{\fzi}{\ensuremath{i}}
+\newcommand{\fzj}{\ensuremath{j}}
+\newcommand{\fzk}{\ensuremath{k}}
+\newcommand{\fzpredname}{\fzsf{predname}}
+\newcommand{\fztype}{\fzsf{type}}
+\newcommand{\fzparamtype}{\fzsf{paramtype}}
+\newcommand{\fzvartype}{\fzsf{vartype}}
+\newcommand{\fzargname}{\fzsf{argname}}
+\newcommand{\fzvarname}{\fzsf{varname}}
+\newcommand{\fzparamname}{\fzsf{paramname}}
+\newcommand{\fzarg}{\fzsf{arg}}
+\newcommand{\fzobjfn}{\fzsf{objfn}}
+\newcommand{\fzvars}{\fzsf{vars}}
+\newcommand{\fzliteral}{\fzsf{literal}}
+\newcommand{\fzarrayliteral}{\fzsf{arrayliteral}}
+\newcommand{\fzannotation}{\fzsf{annotation}}
+\newcommand{\fzannotationname}{\fzsf{annotationname}}
+\newcommand{\fzannotationarg}{\fzsf{annotationarg}}
+\newcommand{\fzsearchannotation}{\fzsf{searchannotation}}
+\newcommand{\fzvarchoiceannotation}{\fzsf{varchoiceannotation}}
+\newcommand{\fznassignmentannotation}{\fzsf{assignmentannotation}}
+\newcommand{\fzstrategyannotation}{\fzsf{strategyannotation}}
+\newcommand{\fzbnf}{\fzsf{::=}}
+\newcommand{\fzalt}{\fzsf{|}}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+
+This document is the specification of the FlatZinc modelling language.
+
+FlatZinc is the target constraint modelling language into which MiniZinc
+models are translated.
+It is a very simple solver independent problem specification language,
+requiring minimal implementation effort to support.
+
+Throughout this document:
+\fzra, \fzrb{} denote float literals;
+\fzxa, \fzxb, \ldots\fzxk, \fzxi, \fzn, \fzi, \fzj, \fzk{} denote int literals;
+\fzya, \fzyb, \ldots\fzyk, \fzyi{} denote literal array elements.
+
+\section{Comments}
+
+Comments start with a percent sign, \%, and extend to the end of the
+line.
+Comments can appear anywhere in a model.
+
+\section{Types}
+
+There are three varieties of types in FlatZinc.
+\begin{itemize}
+\item\emph{Parameter} types apply to fixed values that are specified
+directly in the model.
+\item\emph{Variable} types apply to values computed by the solver during
+search.
+Every parameter type has a corresponding variable type; the variable
+type being distinguished by a \fz{var} keyword.
+\item\emph{Annotations} and \emph{strings}: annotations can appear on
+variable declarations, constraints, and on the solve goal.
+They provide information about how a variable or constraint should be
+treated by the solver (e.g., whether a variable should be output as part
+of the result or whether a particular constraint should implemented
+using domain consistency).
+Strings may appear as arguments to annotations, but nowhere else.
+\end{itemize}
+
+\subsection{Parameter types}
+
+Parameters are fixed quantities explicitly specified in the model
+(see rule \fzsf{par\_type} in Appendix~\ref{Syntax}).
+
+\begin{tabular}{ll}
+\fz{bool} & --- \fz{true} or \fz{false}\\
+\fz{float} & --- float\\
+\fz{int} & ---  int\\
+\fz{set of int} & --- subset of int\\
+\fz{array [1..\fzn] of bool} & --- array of bools\\
+\fz{array [1..\fzn] of float} & --- array of floats\\
+\fz{array [1..\fzn] of int} & --- array of ints\\
+\fz{array [1..\fzn] of set of int} & --- array of sets of ints\\
+\end{tabular}
+\\
+
+A parameter may be used where a variable is expected, but not vice versa.
+
+In predicate declarations the following additional parameter types are allowed.
+
+\begin{tabular}{ll}
+\fz{\fzra..\fzrb} & --- bounded float\\
+\fz{\fzxa..\fzxb} & --- int in range\\
+\fz{\{\fzxa, \fzxb, \ldots, \fzxk\}} & --- int in set\\
+\fz{set of \fzxa..\fzxb} & --- subset of int range\\
+\fz{set of \{\fzxa, \fzxb, \ldots\fzxk\}} & --- subset of int set\\
+\fz{array [1..\fzn] of \fzra..\fzrb} & --- array of floats in range\\
+\fz{array [1..\fzn] of \fzxa..\fzxb} & --- array of ints in range\\
+\fz{array [1..\fzn] of set of \fzxa..\fzxb} & --- array of sets of ints
+in range\\
+\fz{array [1..\fzn] of set of \{\fzxa, \fzxb, \ldots\fzxk\}} & --- array
+of subsets of set\\
+\end{tabular}
+\\
+
+A range \fz{\fzxa..\fzxb} denotes a closed interval
+$\{x | \fzxa \leq x \leq \fzxb\}$.
+
+An array type appearing in a predicate declaration may use just
+\fz{int} instead of \fz{1..\fzn} for the array index range
+in cases where the array argument can be of any length.
+
+\subsection{Variable types}
+
+Variables are quantities decided by the solver
+(see rule \fzsf{var\_type} in Appendix~\ref{Syntax}).
+
+\begin{tabular}{ll}
+\fz{var bool} \\
+\fz{var float} \\
+\fz{var \fzra..\fzrb} \\
+\fz{var int} \\
+\fz{var \fzxa..\fzxb} \\
+\fz{var \{\fzxa, \fzxb, ..., \fzxk\}} \\
+\fz{var set of \fzxa..\fzxb} \\
+\fz{var set of \{\fzxa, \fzxb, ..., \fzxk\}} \\
+\fz{array [1..\fzn] of var bool} \\
+\fz{array [1..\fzn] of var float} \\
+\fz{array [1..\fzn] of var \fzra..\fzrb} \\
+\fz{array [1..\fzn] of var int} \\
+\fz{array [1..\fzn] of var \fzxa..\fzxb} \\
+\fz{array [1..\fzn] of var set of \fzxa..\fzxb} \\
+\fz{array [1..\fzn] of var set of \{\fzxa, \fzxb, \ldots\fzxk\}} \\
+\end{tabular}
+\\
+
+In predicate declarations the following additional variable types are allowed.
+
+\begin{tabular}{ll}
+\fz{var set of int} \\
+\fz{array [1..\fzn] of var set of int}\\
+\end{tabular}
+\\
+
+An array type appearing in a predicate declaration may use just
+\fz{int} instead of \fz{1..\fzn} for the array index range
+in cases where the array argument can be of any length.
+
+\subsection{The string type}
+
+String literals and literal arrays of string literals can appear as
+annotation arguments, but not elsewhere.
+Strings have the same syntax as in C programs (namely, they are
+delimited by double quotes and the backslash character is used for
+escape sequences).
+
+\subsection*{Examples}
+
+\begin{alltt}
+""                 % The empty string.
+"Hello."
+"Hello,\ensuremath{\backslash}nWorld"    % A string with an embedded newline.
+\end{alltt}
+
+\section{Values and expressions}
+
+(See rule \fzsf{expr} in Appendix~\ref{Syntax}).
+
+Examples of literal values:
+
+\begin{tabular}{l@{\qquad}l}
+\textbf{Type} & \textbf{Literals} \\
+\fz{bool} & \fz{true, false}\\
+\fz{float} & \fz{2.718}, \fz{-1.0}, \fz{3.0e8}\\
+\fz{int} & \fz{-42}, \fz{0}, \fz{69}\\
+\fz{set of int} & \fz{\{\}}, \fz{\{2, 3, 5\}}, \fz{1..10}\\
+\fz{arrays} & \fz{[]}, \fz{[\fzya, \ldots, \fzyk]}\\
+\end{tabular}
+\\
+
+where each array element \fzyi{} is either: a non-array literal; the
+name of a non-array parameter or variable, \fzv; or a subscripted array
+parameter or variable, \fzvj, where \fzj{} is an int literal.  For
+example:
+
+\begin{alltt}
+[1, 2, 3]
+[x, y, z]             % Where x, y, and z are variables or parameters.
+[a[3], a[2], a[1]]    % Where a is an array variable or parameter.
+[x, a[1], 3]
+\end{alltt}
+
+Appendix~\ref{Syntax} gives the regular expressions specifying the
+syntax for float and int literals.
+
+\newpage
+
+\section{FlatZinc models}
+
+A FlatZinc model consists of:
+\begin{enumerate}
+\item zero or more external predicate declarations (i.e., a non-standard
+predicate that is supported directly by the target solver);
+\item zero or more parameter declarations;
+\item zero or more variable declarations;
+\item zero or more constraints;
+\item a solve goal
+\end{enumerate}
+in that order.
+
+FlatZinc uses the ASCII character set.
+
+FlatZinc syntax is case sensitive (\fz{foo} and \fz{Foo} are different
+names).
+Identifiers start with a letter (\([\)\fz{A-Za-z}\(]\)) and are followed by
+any sequence of letters, digits, or underscores (\([\)\fz{A-Za-z0-9\_}\(]\)).
+Additionally, if an identifier corresponds to a variable or parameter name
+then it may be optionally prefixed by one or more underscores.
+Identifiers that correspond to the names of predicates, predicate parameters
+and annotations cannot have leading underscores.
+
+The following keywords are reserved and cannot be used as identifiers:
+\texttt{annotation}, 
+\texttt{any}, 
+\texttt{array}, 
+\texttt{bool}, 
+\texttt{case},
+\texttt{constraint}, 
+\texttt{diff},
+\texttt{div},
+\texttt{else},
+\texttt{elseif}, 
+\texttt{endif}, 
+\texttt{enum}, 
+\texttt{false}, 
+\texttt{float},
+\texttt{function},
+\texttt{if},
+\texttt{in},
+\texttt{include},
+\texttt{int},
+\texttt{intersect},
+\texttt{let},
+\texttt{list},
+\texttt{maximize},
+\texttt{minimize},
+\texttt{mod},
+\texttt{not},
+\texttt{of},
+\texttt{satisfy},
+\texttt{subset},
+\texttt{superset},
+\texttt{output},
+\texttt{par},
+\texttt{predicate},
+\texttt{record},
+\texttt{set},
+\texttt{solve},
+\texttt{string},
+\texttt{symdiff},
+\texttt{test},
+\texttt{then},
+\texttt{true},
+\texttt{tuple},
+\texttt{union},
+\texttt{type},
+\texttt{var},
+\texttt{where},
+\texttt{xor}.\\
+Note that some of these keywords are not used in FlatZinc.
+They are reserved because they are keywords in Zinc and MiniZinc.
+
+FlatZinc syntax is insensitive to whitespace.
+
+\subsection{Predicate declarations}
+
+(See rule \fzsf{pred\_decl} in Appendix~\ref{Syntax}.)
+
+Predicates used in the model that are not standard FlatZinc must be
+declared at the top of a FlatZinc model, before any other lexical items.
+Predicate declarations take the form
+
+\fz{
+predicate \fzpredname(\fztype: \fzargname, \ldots);
+}
+
+where \fzpredname{} and \fzargname{} are identifiers.
+
+Annotations are not permitted anywhere in predicate declarations.
+
+It is illegal to supply more than one predicate declaration for a given
+\fzpredname.
+
+\subsection*{Examples}
+
+\begin{alltt}
+    % m is the median value of {x, y, z}.
+    %
+predicate median_of_3(var int: x, var int: y, var int: z, var int: m);
+
+    % all_different([x1, .., xn]) iff
+    % for all i, j in 1..n: xi != xj.
+    %
+predicate all_different(array [int] of var int: xs);
+
+    % exactly_one([x1, .., xn]) iff
+    % there exists an i in 1..n: xi = true
+    % and for all j in 1..n: j != i -> xj = false.
+    %
+predicate exactly_one(array [int] of var bool: xs);
+\end{alltt}
+
+\subsection{Parameter declarations}
+
+(See rule \fzsf{param\_decl} in Appendix~\ref{Syntax}.)
+
+Parameters have fixed values and must be assigned values:
+
+\fz{
+\fzparamtype: \fzparamname{} \tt{=} \fzliteral;
+}
+
+where \fzparamtype{} is a parameter type, \fzparamname{} is an identifier,
+and \fzliteral{} is a literal value.
+
+Annotations are not permitted anywhere in parameter declarations.
+
+\subsection*{Examples}
+
+\begin{alltt}
+float: pi = 3.141;
+array [1..7] of int: fib = [1, 1, 2, 3, 5, 8, 13];
+bool: beer_is_good = true;
+\end{alltt}
+
+\subsection{Variable declarations}
+
+(See rule \fzsf{var\_decl} in Appendix~\ref{Syntax}.)
+
+Variables have variable types and can be declared with optional assignments
+(some variables are aliases of other variables and, for arrays,
+it is often convenient to have fixed permutations of other
+variables).  Variables may be declared with zero or more annotations.
+
+\fz{
+\fzvartype: \fzvarname{} $[:: \fzannotation]^*$
+	\textbf{[} \tt{=} \fzarrayliteral\textbf{]};
+}
+
+where \fzvartype{} is a variable type, \fzvarname{} is an identifier,
+\fzannotation{} is an annotation, and \fzarrayliteral{} is a literal array
+value.
+
+\subsection*{Examples}
+
+\begin{alltt}
+var 0..9: digit;
+var bool: b;
+var set of 1..3: s;
+var 0.0..1.0: x;
+var int: y :: mip;        % 'mip' annotation: y should be a MIP variable.
+array [1..3] of var 1..10: a;
+array [1..3] of var 1..10: b = [a[3], a[2], a[1]];
+\end{alltt}
+
+\subsection{Constraints}
+
+(See rule \fzsf{constraint} in Appendix~\ref{Syntax}.)
+
+Constraints take the following form and may include zero or more annotations:
+
+\fz{
+constraint \fzpredname(\fzarg, \ldots) $[:: \fzannotation]^*$;
+}
+
+where \fzpredname{} is a predicate name, \fzannotation{} is an
+annotation,
+and each argument \fzarg{} is either: 
+a literal value;
+the name of a parameter or variable, \fzv;
+or a subscripted array parameter or variable, \fzvj, where \fzj{} is an
+int literal.
+
+\subsection*{Examples}
+
+\begin{alltt}
+constraint int_le(0, x);    % 0 <= x
+constraint int_lt(x, y);    % x <  y
+constraint int_le(y, 10);   % y <= 10
+    % 'domain': use domain consistency for this constraint:
+    % 2x + 3y = 10
+constraint int_lin_eq([2, 3], [x, y], 10) :: domain;
+\end{alltt}
+
+\subsection{Solve goal}
+
+(See rule \fzsf{solve\_goal} in Appendix~\ref{Syntax}.)
+
+A model should finish with a solve goal, taking one of the following forms:
+
+\fz{
+solve $[:: \fzannotation]^*$ satisfy;
+}
+
+(search for any satisfying assignment) or
+
+\fz{
+solve $[:: \fzannotation]^*$ minimize \fzobjfn;
+}
+
+(search for an assignment minimizing \fzobjfn) or
+
+\fz{
+solve $[:: \fzannotation]^*$ maximize \fzobjfn;
+}
+
+(search for an assignment maximizing \fzobjfn) where \fzobjfn{} is either
+the name of a variable, \fzv, or a subscripted array variable, \fzvj,
+where \fzj{} is an int literal.
+
+A solution consists of a complete assignment where all variables in the
+model have been given a fixed value.
+
+\subsection*{Examples}
+
+\begin{alltt}
+
+solve satisfy;      % Find any solution using the default strategy.
+
+solve minimize w;   % Find a solution minimizing w, using the default strategy.
+
+    % First label the variables in xs in the order x[1], x[2], ...
+    % trying values in ascending order.
+solve :: int_search(xs, input_order, indomain_min, complete)
+    satisfy;    % Find any solution.
+
+    % First use first-fail on these variables, splitting domains
+    % at each choice point.
+solve :: int_search([x, y, z], first_fail, indomain_split, complete)
+    maximize x; % Find a solution maximizing x.
+
+
+\end{alltt}
+
+\subsection{Annotations}
+
+Annotations are optional suggestions to the solver concerning how
+individual variables and constraints should be handled (e.g., a
+particular solver may have multiple representations for int variables)
+and how search should proceed.
+An implementation is free to ignore any annotations it does not
+recognise, although it should print a warning on the standard error
+stream if it does so.
+Annotations are unordered and idempotent: annotations can be reordered
+and duplicates can be removed without changing the meaning of the
+annotations.
+
+An \fzannotation{} is either
+
+\fz{
+\fzannotationname
+}
+
+or
+
+\fz{
+\fzannotationname(\fzannotationarg, \ldots)
+}
+
+where \fzannotationname{} is an identifier and \fzannotationarg{} is any
+expression (which may also be another annotation --- that is,
+annotations may be nested inside other annotations).
+
+\subsubsection{Search annotations}
+
+While an implementation is free to ignore any or all annotations in a
+model, it is recommended that implementations at least recognise the
+following standard annotations for solve goals.
+
+\fz{
+seq\_search([\fzsearchannotation, \ldots])
+}
+
+allows more than one search annotation to be specified in a particular
+order (otherwise annotations can be handled in any order).
+
+A \fzsearchannotation{} is one of the following:
+
+\begin{tabular}{l}
+\fz{
+int\_search(\fzvars, \fzvarchoiceannotation, \fznassignmentannotation,
+\fzstrategyannotation)
+}
+\\
+\fz{
+bool\_search(\fzvars, \fzvarchoiceannotation, \fznassignmentannotation,
+\fzstrategyannotation)
+}
+\\
+\fz{
+set\_search(\fzvars, \fzvarchoiceannotation, \fznassignmentannotation,
+\fzstrategyannotation)
+}
+\\
+\end{tabular}
+
+where \fzvars{} is an array variable name or an array literal specifying
+the variables to be assigned (ints, bools, or sets respectively).
+
+\fzvarchoiceannotation{} specifies how the next variable to be assigned is
+chosen at each choice point.
+Possible choices are as follows (it is recommended that implementations
+support the starred options):\\
+
+\begin{tabular}{p{.3\linewidth}lp{.6\linewidth}}
+\fz{input\_order}
+& $\star$
+& Choose variables in the order they appear in \fzvars.\\
+\fz{first\_fail}
+& $\star$
+& Choose the variable with the smallest domain.\\
+\fz{anti\_first\_fail}
+&
+& Choose the variable with the largest domain.\\
+\fz{smallest}
+&
+& Choose the variable with the smallest value in its domain.\\
+\fz{largest}
+&
+& Choose the variable with the largest value in its domain.\\
+\fz{occurrence}
+&
+& Choose the variable with the largest number of attached constraints.\\
+\fz{most\_constrained}
+&
+& Choose the variable with the smallest domain, breaking ties using the
+number of constraints.\\
+\fz{max\_regret}
+&
+& Choose the variable with the largest difference between the two
+smallest values in its domain.\\
+\end{tabular}
+
+\fznassignmentannotation{} specifies how the chosen variable should be
+constrained. 
+Possible choices are as follows (it is recommended that implementations
+support the starred options):\\
+
+\begin{tabular}{p{.3\linewidth}lp{.6\linewidth}}
+\fz{indomain\_min}
+& $\star$
+& Assign the smallest value in the variable's domain.\\
+\fz{indomain\_max}
+& $\star$
+& Assign the largest value in the variable's domain.\\
+\fz{indomain\_middle}
+&
+& Assign the value in the variable's domain closest to the mean of its
+current bounds.\\
+\fz{indomain\_median}
+&
+& Assign the middle value in the variable's domain.\\
+\fz{indomain}
+&
+& Nondeterministically assign values to the variable in ascending
+order.\\
+\fz{indomain\_random}
+&
+& Assign a random value from the variable's domain.\\
+\fz{indomain\_split}
+&
+& Bisect the variable's domain, excluding the upper half first.\\
+\fz{indomain\_reverse\_split}
+&
+& Bisect the variable's domain, excluding the lower half first.\\
+\fz{indomain\_interval}
+&
+& If the variable's domain consists of several contiguous intervals,
+reduce the domain to the first interval.
+Otherwise just split the variable's domain.
+\end{tabular}
+
+Of course, not all assignment strategies make sense for all search
+annotations (e.g., \fz{bool\_search} and \fz{indomain\_split}).
+
+Finally, \fzstrategyannotation{} specifies a search strategy;
+implementations should at least support \fz{complete} (i.e., exhaustive
+search).
+
+\subsubsection{Output annotations}
+
+Model output is specified through variable annotations.
+Non-array output variables should be annotated with
+\fz{output\_var}.
+Array output variables should be annotated with
+\fz{output\_array([\fzxa..\fzxb, \ldots])}
+where \fz{\fzxa..\fzxb, \ldots} are the index set ranges of the
+original array (it is assumed that the FlatZinc model was derived from a
+higher level model written in, say, MiniZinc, where the original array
+may have had multiple dimensions and/or index sets that do not start at
+1).
+
+\subsubsection{Variable definition annotations}
+
+To support solvers capable of exploiting functional relationships, a
+variable defined as a function of other variables may be annotated thus:
+\begin{alltt}
+var int: x :: is_defined_var;
+...
+constraint int_plus(y, z, x) :: defines_var(x);
+\end{alltt}
+(The \fz{defines\_var} annotation should appear on exactly one
+constraint.)
+This allows a solver to represent \fz{x} internally as a representation
+of \fz{y$+$z} rather than as a separate constrained variable.
+The \fz{is\_defined\_var} annotation on the declaration of \fz{x}
+provides ``early warning'' to the solver that such an option is
+available.
+
+\subsubsection{Intermediate variables}
+
+Intermediate variables introduced during conversion of a higher-level
+model to FlatZinc may be annotated thus:
+\begin{alltt}
+var int: TMP :: var_is_introduced;
+\end{alltt}
+This information is potentially useful to the solver's search strategy.
+
+\subsubsection{Constraint annotations}
+
+Annotations can be placed on constraints advising the solver how the
+constraint should be implemented.
+Here are some constraint annotations supported by some solvers:
+
+\begin{tabular}{p{.3\linewidth}p{.6\linewidth}}
+\fz{bounds} or \fz{boundsZ}
+& Use integer bounds propagation.\\
+\fz{boundsR}
+& Use real bounds propagation.\\
+\fz{boundsD}
+& A tighter version of \fz{boundsZ} where support for the bounds must
+exist.\\
+\fz{domain}
+& Use domain propagation.\\
+\fz{priority(k)}
+& where \fz{k} is an integer constant indicating propagator priority.\\
+\end{tabular}
+
+\section{Output}
+
+An implementation should output values for all and only the variables
+annotated with \fz{output\_var} or \fz{output\_array} (output
+annotations must not appear on parameters).
+
+For example:
+
+\begin{alltt}
+var 1..10: x :: output_var;
+var 1..10: y;       % y is not output.
+    % Output zs as a "flat" representation of a 2D array:
+array [1..4] of var int: zs :: output_array([1..2, 1..2]);
+\end{alltt}
+
+All non-error output should be sent to the standard output stream.
+
+Output should be in alphabetical order and take the following form:
+
+\fz{
+\fzvarname{} \tt{=} \fzliteral;
+}
+
+or, for array variables,
+
+\fz{
+\fzvarname{} \tt{=} array$N$d(\fzxa..\fzxb, \ldots, [\fzya, \fzyb, \ldots \fzyk]);
+}
+
+where $N$ is the number of index sets specified in the
+corresponding \fz{output\_array} annotation,
+\fz{\fzxa..\fzxb}, \ldots are the index set ranges,
+and \fzya, \fzyb, \ldots \fzyk{} are literals of the element type.
+
+The intention is that the output of a FlatZinc model solution should be
+suitable for input to a MiniZinc model as a data file (this is why
+parameters should not be included in the output).
+
+Implementations should ensure that \emph{all} model variables (not
+just the output variables) have satisfying assignments before printing a
+solution.
+
+The output for a solution must be terminated with ten consecutive
+minus signs on a separate line: \fz{----------}.
+
+Multiple solutions may be output, one after the other, as search
+proceeds.
+
+If at least one solution has been found and search then terminates
+having explored the whole search space, then ten
+consecutive equals signs should be printed on a separate line:
+\fz{==========}.
+
+If no solutions have been found and search terminates having explored
+the whole search space, then \fz{=====UNSATISFIABLE=====} should be
+printed on a separate line.
+
+If the objective of an optimization problem is unbounded, then
+\fz{=====UNBOUNDED=====} should be printed on a separate line.
+
+If no solutions have been found and search terminates having
+\emph{not} explored the whole search space, then
+\fz{=====UNKNOWN=====} should be printed on a separate line.
+
+Implementations may output further information about the solution(s),
+or lack thereof, in the form of FlatZinc comments.
+
+\subsection*{Examples}
+
+Asking for a single solution to this model:
+\begin{alltt}
+var 1..3: x :: output_var;
+solve satisfy
+\end{alltt}
+might produce this output:
+\begin{alltt}
+x = 1;
+----------
+\end{alltt}
+
+Asking for all solutions to this model:
+\begin{alltt}
+array [1..2] of var 1..3: xs :: output_array([1..2]);
+constraint int_lt(xs[1], xs[2]);    % x[1] < x[2].
+solve satisfy
+\end{alltt}
+might produce this output:
+\begin{alltt}
+xs = array1d(1..2, [1, 2]);
+----------
+xs = array1d(1..2, [1, 3]);
+----------
+xs = array1d(1..2, [2, 3]);
+----------
+==========
+\end{alltt}
+
+Asking for a single solution to this model:
+\begin{alltt}
+var 1..10: x :: output_var;
+solve maximize x;
+\end{alltt}
+should produce this output:
+\begin{alltt}
+x = 10;
+----------
+==========
+\end{alltt}
+The row of equals signs indicates that a complete search was performed
+and that the last result printed is the optimal solution.
+
+Asking for the first three solutions to this model:
+\begin{alltt}
+var 1..10: x :: output_var;
+solve maximize x;
+\end{alltt}
+might produce this output:
+\begin{alltt}
+x = 1;
+----------
+x = 2;
+----------
+x = 3;
+----------
+\end{alltt}
+Because the output does not finish with \texttt{==========}, search did not
+finish, hence these results must be interpreted as approximate solutions
+to the optimization problem.
+
+Asking for a solution to this model:
+\begin{alltt}
+var 1..3: x :: output_var;
+var 4..6: y :: output_var;
+constraint int_lt(y, x);    % y < x.
+solve satisfy;
+\end{alltt}
+should produce this output:
+\begin{alltt}
+=====UNSATISFIABLE=====
+\end{alltt}
+indicating that a complete search was performed and no solutions were
+found (i.e., the problem is unsatisfiable).
+
+\newpage
+
+\appendix
+
+\section{Standard FlatZinc Predicates}
+
+The type signature of each required predicate is preceded by its
+specification
+($n$ denotes the length of any array arguments).
+
+A target solver is not required to implement the complete set of
+standard FlatZinc predicates.
+Solvers are, however, required to support \fz{bool\_eq} for all fixed
+argument values (e.g., model inconsistency detected during flattening
+may be handled by including a constraint \fz{bool\_eq(true, false)}
+in the FlatZinc model).
+
+% NOTE: the array_var_* builtins will be removed in version 1.2.
+% 
+\begin{alltt}
+\((\forall i\in{}1..n: as[i]) \leftrightarrow r\
+\mathrm{ where} n \mathrm{is the length of} as\)
+array_bool_and(array [int] of var bool: as, var bool: r)
+
+\(b\in{}1..n \wedge as[b] = c\
+\mathrm{ where} n \mathrm{is the length of} as\)
+array_bool_element(var int: b, array [int] of bool: as, var bool: c)
+
+\((\exists i\in{}1..n: as[i]) \leftrightarrow r\
+\mathrm{ where} n \mathrm{is the length of} as\)
+array_bool_or(array [int] of var bool: as, var bool: r)
+
+\((((\sum i\in{}1..n: as[i]) \mathrm{mod} 2) = 1)\
+\mathrm{ where} n \mathrm{is the length of} as\)
+array_bool_xor(array [int] of var bool: as)
+
+\(b\in{}1..n \wedge as[b] = c \mathrm{ where} n\
+\mathrm{is the length of} as\)
+array_float_element(var int: b, array [int] of float: as, var float: c)
+
+\(b\in{}1..n \wedge as[b] = c \mathrm{ where} n\
+\mathrm{is the length of} as\)
+array_int_element(var int: b, array [int] of int: as, var int: c)
+
+\(b\in{}1..n \wedge as[b] = c \mathrm{ where} n\
+\mathrm{is the length of} as\)
+array_set_element(var int: b, array [int] of set of int: as, \
+set of int: c)
+
+\(b\in{}1..n \wedge as[b] = c\
+\mathrm{ where} n \mathrm{is the length of} as\)
+array_var_bool_element(var int: b, array [int] of var bool: as, var bool: c)
+
+\(b\in{}1..n \wedge as[b] = c \mathrm{ where} n\
+\mathrm{is the length of} as\)
+array_var_float_element(var int: b, array [int] of var float: as, var float: c)
+
+\(b\in{}1..n \wedge as[b] = c \mathrm{ where} n\
+\mathrm{is the length of} as\)
+array_var_int_element(var int: b, array [int] of var int: as, var int: c)
+
+\(b\in{}1..n \wedge as[b] = c \mathrm{ where} n\
+\mathrm{is the length of} as\)
+array_var_set_element(var int: b, array [int] of var set of int: as, \
+var set of int: c)
+
+\((a \leftrightarrow b=1) \wedge (\neg{}a \leftrightarrow b=0)\)
+bool2int(var bool: a, var int: b)
+
+\((a \wedge b) \leftrightarrow r\)
+bool_and(var bool: a, var bool: b, var bool: r)
+
+\((\exists i\in{}1..n\sb{as}: as[i]) \vee (\exists i\in1..n\sb{bs}: \
+\neg{}bs[i])\
+\mathrm{ where} n \mathrm{is the length of} as\)
+bool_clause(array [int] of var bool: as, array [int] of var bool: bs)
+
+\(a = b\)
+bool_eq(var bool: a, var bool: b)
+
+\((a = b) \leftrightarrow r\)
+bool_eq_reif(var bool: a, var bool: b, var bool: r)
+
+\(\neg{}a \vee b\)
+bool_le(var bool: a, var bool: b)
+
+\((\neg{}a \vee b) \leftrightarrow r\)
+bool_le_reif(var bool: a, var bool: b, var bool: r)
+
+\(\sum i\in{}1..n: as[i].bs[i] = c\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+bool_lin_eq(array [int] of int: as, array [int] of var bool: bs, var int: c)
+
+\(\sum i\in{}1..n: as[i].bs[i] \le c\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+bool_lin_le(array [int] of int: as, array [int] of var bool: bs, int: c)
+
+\(\neg{}a \wedge b\)
+bool_lt(var bool: a, var bool: b)
+
+\((\neg{}a \wedge b) \leftrightarrow r\)
+bool_lt_reif(var bool: a, var bool: b, var bool: r)
+
+\(\neg{}a = b\)
+bool_not(var bool: a, var bool: b)
+
+\((a \vee b) \leftrightarrow r\)
+bool_or(var bool: a, var bool: b, var bool: r)
+
+\((a \neq b) \leftrightarrow r\)
+bool_xor(var bool: a, var bool: b, var bool: r)
+
+\(|a| = b\)
+float_abs(var float: a, var float: b)
+
+\(\mathrm{acos}\, a = b\)
+float_acos(var float: a, var float: b)
+
+\(\mathrm{asin}\, a = b\)
+float_asin(var float: a, var float: b)
+
+\(\mathrm{atan}\, a = b\)
+float_atan(var float: a, var float: b)
+
+\(\mathrm{cos}\, a = b\)
+float_cos(var float: a, var float: b)
+
+\(\mathrm{cosh}\, a = b\)
+float_cosh(var float: a, var float: b)
+
+\(\mathrm{exp}\, a = b\)
+float_exp(var float: a, var float: b)
+ 
+\(\mathrm{ln}\, a = b\)
+float_ln(var float: a, var float: b)
+
+\(\mathrm{log}_{10}\, a = b\)
+float_log10(var float: a, var float: b)
+
+\(\mathrm{log}_2\, a = b\)
+float_log2(var float: a, var float: b)
+
+\(\sqrt{a} = b\)
+float_sqrt(var float: a, var float: b)
+
+\(\mathrm{sin}\, a = b\)
+float_sin(var float: a, var float: b)
+
+\(\mathrm{sinh}\, a = b\)
+float_sinh(var float: a, var float: b)
+
+\(\mathrm{tan}\, a = b\)
+float_tan(var float: a, var float: b)
+
+\(\mathrm{tanh}\, a = b\)
+float_tanh(var float: a, var float: b)
+
+\(a = b\)
+float_eq(var float: a, var float: b)
+
+\((a = b) \leftrightarrow r\)
+float_eq_reif(var float: a, var float: b, var bool: r)
+
+\(a \leq b\)
+float_le(var float: a, var float: b)
+
+\((a \leq b) \leftrightarrow r\)
+float_le_reif(var float: a, var float: b, var bool: r)
+
+\(\sum i\in{}1..n: as[i].bs[i] = c\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+float_lin_eq(array [int] of float: as, array [int] of var float: bs, float: c)
+
+\((\sum i\in{}1..n: as[i].bs[i] = c) \leftrightarrow r\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+float_lin_eq_reif(array [int] of float: as, array [int] of var float: \
+bs,
+    float: c, var bool: r)
+
+\(\sum i\in{}1..n: as[i].bs[i] \leq c\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+float_lin_le(array [int] of float: as, array [int] of var float: bs, float: c)
+
+\((\sum i\in{}1..n: as[i].bs[i] \leq c) \leftrightarrow r\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+float_lin_le_reif(array [int] of float: as, array [int] of var float: \
+bs,
+    float: c, var bool: r)
+
+\(\sum i\in{}1..n: as[i].bs[i] < c\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+float_lin_lt(array [int] of float: as, array [int] of var float: bs, float: c)
+
+\((\sum i\in{}1..n: as[i].bs[i] < c) \leftrightarrow r\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+float_lin_lt_reif(array [int] of float: as, array [int] of var float: \
+bs,
+    float: c, var bool: r)
+
+\(\sum i\in{}1..n: as[i].bs[i] \neq c\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+float_lin_ne(array [int] of float: as, array [int] of var float: bs, float: c)
+
+\((\sum i\in{}1..n: as[i].bs[i] \neq c) \leftrightarrow r\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+float_lin_ne_reif(array [int] of float: as, array [int] of var float: \
+bs,
+    float: c, var bool: r)
+
+\(a < b\)
+float_lt(var float: a, var float: b)
+
+\((a < b) \leftrightarrow r\)
+float_lt_reif(var float: a, var float: b, var bool: r)
+
+\(\mathrm{max}(a, b) = c\)
+float_max(var float: a, var float: b, var float: c)
+
+\(\mathrm{min}(a, b) = c\)
+float_min(var float: a, var float: b, var float: c)
+
+\(a \neq b\)
+float_ne(var float: a, var float: b)
+
+\((a \neq b) \leftrightarrow r\)
+float_ne_reif(var float: a, var float: b, var bool: r)
+
+\(a+b = c\)
+float_plus(var float: a, var float: b, var float: c)
+
+\(|a| = b\)
+int_abs(var int: a, var int: b)
+
+\(a/b = c\
+\mathrm{rounding towards zero.}\)
+int_div(var int: a, var int: b, var int: c)
+
+\(a = b\)
+int_eq(var int: a, var int: b)
+
+\((a = b) \leftrightarrow r\)
+int_eq_reif(var int: a, var int: b, var bool: r)
+
+\(a \leq b\)
+int_le(var int: a, var int: b)
+
+\((a \leq b) \leftrightarrow r\)
+int_le_reif(var int: a, var int: b, var bool: r)
+
+\(\sum i\in{}1..n: as[i].bs[i] = c\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+int_lin_eq(array [int] of int: as, array [int] of var int: bs, int: c)
+
+\((\sum i\in{}1..n: as[i].bs[i] = c) \leftrightarrow r\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+int_lin_eq_reif(array [int] of int: as, array [int] of var int: bs, \
+    int: c, var bool: r)
+
+\(\sum i\in{}1..n: as[i].bs[i] \leq c\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+int_lin_le(array [int] of int: as, array [int] of var int: bs, int: c)
+
+\((\sum i\in{}1..n: as[i].bs[i] \leq c) \leftrightarrow r\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+int_lin_le_reif(array [int] of int: as, array [int] of var int: bs, \
+    int: c, var bool: r)
+
+\(\sum i\in{}1..n: as[i].bs[i] \neq c\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+int_lin_ne(array [int] of int: as, array [int] of var int: bs, int: c)
+
+\((\sum i\in{}1..n: as[i].bs[i] \neq c) \leftrightarrow r\
+\mathrm{ where} n \mathrm{is the common length of} as \mathrm{and} bs\)
+int_lin_ne_reif(array [int] of int: as, array [int] of var int: bs, \
+    int: c, var bool: r)
+
+\(a < b\)
+int_lt(var int: a, var int: b)
+
+\((a < b) \leftrightarrow r\)
+int_lt_reif(var int: a, var int: b, var bool: r)
+
+\(\mathrm{max}(a, b) = c\)
+int_max(var int: a, var int: b, var int: c)
+
+\(\mathrm{min}(a, b) = c\)
+int_min(var int: a, var int: b, var int: c)
+
+\(a-x.b = c\
+\mathrm{ where} x = a/b \mathrm{rounding towards zero.}\)
+int_mod(var int: a, var int: b, var int: c)
+
+\(a \neq b\)
+int_ne(var int: a, var int: b)
+
+\((a \neq b) \leftrightarrow r\)
+int_ne_reif(var int: a, var int: b, var bool: r)
+
+\(a+b = c\)
+int_plus(var int: a, var int: b, var int: c)
+
+\(a\times{}b = c\)
+int_times(var int: a, var int: b, var int: c)
+
+\(a = b\)
+int2float(var int: a, var float: b)
+
+\(|a| = b\)
+set_card(var set of int: a, var int: b)
+
+\(a-b = c\)
+set_diff(var set of int: a, var set of int: b, var set of int: c)
+
+\(a = b\)
+set_eq(var set of int: a, var set of int: b)
+
+\((a = b) \leftrightarrow r\)
+set_eq_reif(var set of int: a, var set of int: b, var bool: r)
+
+\(a\in{}b\)
+set_in(var int: a, var set of int: b)
+
+\((a\in{}b) \leftrightarrow r\)
+set_in_reif(var int: a, var set of int: b, var bool: r)
+
+\(a\cap{}b = c\)
+set_intersect(var set of int: a, var set of int: b, var set of int: c)
+
+\(a \subseteq b \vee \mathrm{min}(a\bigtriangleup{}b)\in{}a\)
+set_le(var set of int: a, var set of int: b)
+
+\(a \subset b \vee \mathrm{min}(a\bigtriangleup{}b)\in{}a\)
+set_lt(var set of int: a, var set of int: b)
+
+\(a \neq b\)
+set_ne(var set of int: a, var set of int: b)
+
+\((a \neq b) \leftrightarrow r\)
+set_ne_reif(var set of int: a, var set of int: b, var bool: r)
+
+\(a\subseteq{}b\)
+set_subset(var set of int: a, var set of int: b)
+
+\((a\subseteq{}b) \leftrightarrow r\)
+set_subset_reif(var set of int: a, var set of int: b, var bool: r)
+
+\(a\bigtriangleup{}b = c\)
+set_symdiff(var set of int: a, var set of int: b, var set of int: c)
+
+\(a\cup{}b = c\)
+set_union(var set of int: a, var set of int: b, var set of int: c)
+\end{alltt}
+
+
+\newpage
+
+\section{FlatZinc Syntax in BNF}
+\label{Syntax}
+
+We present the syntax of FlatZinc in standard BNF, adopting the
+following conventions:
+sans serif \fzsf{xyz}{} indicates a non-terminal;
+brackets $[e]$ indicate $e$ optional;
+double brackets $[[a-z]]$ indicate a character from the given range;
+the Kleene star $e\star$ indicates a sequence of zero or more
+repetitions of $e$ ($\star$ binds tighter than other BNF operators);
+ellipsis $e, \ldots$ indicates a non-empty comma-separated sequence
+of $e$;
+alternation $e_1 \fzalt e_2$ indicates alternatives.
+Comments appear in italics after a dash.
+Note that FlatZinc uses the ASCII character set.
+
+\begin{alltt}
+\fzsf{flatzinc\_model} \fzbnf \
+\( \
+[\fzsf{pred\_decl}\star] \
+[\fzsf{param\_decl}\star] \
+[\fzsf{var\_decl}\star] \
+[\fzsf{constraint}\star] \
+\fzsf{solve\_goal} \
+\)
+
+\fzsf{pred\_decl} \fzbnf predicate \
+\fzsf{identifier}(\fzsf{pred\_param},\ldots);
+
+\fzsf{pred\_param} \fzbnf \fzsf{pred\_param\_type}: \fzsf{pred\_ann\_identifier}
+
+\fzsf{pred\_param\_type} \fzbnf \fzsf{par\_pred\_param\_type} \fzalt \fzsf{var\_pred\_param\_type}
+
+\fzsf{par\_type} \fzbnf bool
+    \fzalt float
+    \fzalt int
+    \fzalt set of int
+    \fzalt array [\fzsf{index\_set}] of bool
+    \fzalt array [\fzsf{index\_set}] of float
+    \fzalt array [\fzsf{index\_set}] of int
+    \fzalt array [\fzsf{index\_set}] of set of int
+
+\fzsf{par\_pred\_param\_type} \fzbnf \fzsf{par\_type}
+    \fzalt \fzsf{float\_const}..\fzsf{float\_const}
+    \fzalt \fzsf{int\_const}..\fzsf{int\_const}
+    \fzalt \{\fzsf{int\_const},\ldots\}
+    \fzalt set of \fzsf{int\_const}..\fzsf{int\_const}
+    \fzalt set of \{\fzsf{int\_const},\ldots\}
+    \fzalt array [\fzsf{index\_set}] of \
+\fzsf{float\_const}..\fzsf{float\_const}
+    \fzalt array [\fzsf{index\_set}] of \fzsf{int\_const}..\fzsf{int\_const}
+    \fzalt array [\fzsf{index\_set}] of \{\fzsf{int\_const},\ldots\}
+    \fzalt array [\fzsf{index\_set}] of set of \
+\fzsf{int\_const}..\fzsf{int\_const}
+    \fzalt array [\fzsf{index\_set}] of set of \{\fzsf{int\_const},\ldots\}
+
+\fzsf{var\_type} \fzbnf var bool
+    \fzalt var float
+    \fzalt var \fzsf{float\_const}..\fzsf{float\_const}
+    \fzalt var int
+    \fzalt var \fzsf{int\_const}..\fzsf{int\_const}
+    \fzalt var \{\fzsf{int\_const},\ldots\}
+    \fzalt var set of \fzsf{int\_const}..\fzsf{int\_const}
+    \fzalt var set of \{\fzsf{int\_const},\ldots\}
+    \fzalt array [\fzsf{index\_set}] of var bool
+    \fzalt array [\fzsf{index\_set}] of var float
+    \fzalt array [\fzsf{index\_set}] of var \
+\fzsf{float\_const}..\fzsf{float\_const}
+    \fzalt array [\fzsf{index\_set}] of var int
+    \fzalt array [\fzsf{index\_set}] of var \
+\fzsf{int\_const}..\fzsf{int\_const}
+    \fzalt array [\fzsf{index\_set}] of var \{\fzsf{int\_const},\ldots\}
+    \fzalt array [\fzsf{index\_set}] of var set of \
+\fzsf{int\_const}..\fzsf{int\_const}
+    \fzalt array [\fzsf{index\_set}] of var set of \
+\{\fzsf{int\_const},\ldots\}
+
+\fzsf{var\_pred\_param\_type} \fzbnf \fzsf{var\_type}
+    \fzalt var set of int
+    \fzalt array [\fzsf{index\_set}] of var set of int
+
+\fzsf{index\_set} \fzbnf 1..\fzsf{int\_const} \fzalt int
+    \textrm{\em --- \fz{int} is only allowed in predicate declarations.}
+
+\fzsf{expr} \fzbnf \fzsf{bool\_const} \
+\fzalt \fzsf{float\_const} \
+\fzalt \fzsf{int\_const} \
+\fzalt \fzsf{set\_const}
+    \fzalt \fzsf{var\_par\_id} \
+\fzalt \fzsf{var\_par\_id}[\fzsf{int\_const}] \
+\fzalt \fzsf{array\_expr}
+    \fzalt \fzsf{annotation} \
+\fzalt "...string constant..."
+    \textrm{\em --- Annotation and string expressions are only permitted in \
+annotation arguments.}
+
+\fzsf{pred\_ann\_id} \fzbnf \([[A-Za-z]][[A-Za-z0-9\_]]\star\)
+
+\fzsf{var\_par\_id} \fzbnf \(\_\star[[A-Za-z]][[A-Za-z0-9\_]]\star\)
+
+\fzsf{bool\_const} \fzbnf true \fzalt false
+
+\fzsf{float\_const} \fzbnf \
+\(\fzsf{int\_const}.[[0-9]][[0-9]]\star[[[eE]]\fzsf{int_const}]\) \
+\fzalt \(\fzsf{int\_const}[[eE]]\fzsf{int_const}\)
+
+\fzsf{int\_const} \fzbnf \([+-][[0-9]][[0-9]]\star\)
+
+\fzsf{set\_const} \fzbnf \fzsf{int\_const}..\fzsf{int\_const} \
+\fzalt \(\{\)\fzsf{int\_const},\ldots\(\}\)
+
+\fzsf{array\_expr} \fzbnf [] \fzalt [\fzsf{expr},\ldots]
+
+\fzsf{param\_decl} \fzbnf \fzsf{par\_type}: \fzsf{var\_par\_id} = \fzsf{expr};
+    \textrm{\em --- expr must be a \fzsf{bool\_const}, \fzsf{float\_const},\
+\fzsf{int\_const}, \fzsf{set\_const}, or an array thereof.}
+
+\fzsf{var\_decl} \fzbnf \fzsf{var\_type}: \fzsf{var\_par\_id} \fzsf{annotations} \
+[= \fzsf{expr}];
+    \textrm{\em --- Any vars in assignments must be declared earlier.}
+
+\fzsf{constraint} \fzbnf constraint \fzsf{pred\_ann\_id}(\fzsf{expr},\ldots) \
+\fzsf{annotations};
+
+\fzsf{solve\_goal} \fzbnf solve \fzsf{annotations} satisfy;
+    \fzalt solve \fzsf{annotations} minimize \fzsf{expr};
+    \fzalt solve \fzsf{annotations} maximize \fzsf{expr};
+    \textrm{\em --- \fzsf{expr} must be a var name or var array element.}
+
+\fzsf{annotations} \fzbnf \([\):: \fzsf{annotation}\(]\star\)
+\fzsf{annotation} \fzbnf \fzsf{pred\_ann\_id} \
+\fzalt \fzsf{pred\_ann\_id}(\fzsf{expr},\ldots)
+    \textrm{\em --- Whether an identifier is an annotation or a variable \
+name can be identified from its type.}
+    \textrm{\em --- FlatZinc does not permit overloading of names.}
+
+\end{alltt}
+
+\end{document}

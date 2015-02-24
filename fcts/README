@@ -1,0 +1,64 @@
+This directory contains the FlatZinc conformance test suite (FCTS).
+It currently contains:
+
+    parsing/         - tests for FlatZinc parsers	
+    builtins/        - tests for all the FlatZinc built-ins
+    output/          - tests for FlatZinc output
+    search/          - tests for the standard search annotations
+
+Expected outputs for the tests are contained in files with a *.exp[0-9]*
+extension.  The expected outputs in the builtins and search directories
+correspond to the case where we are searching for all solutions.  (An
+exception to this is the .lp.exp[0-9]* files which contain a single
+solution -- these correspond to the output from a MIP solver.)
+
+If no search annotation is provided the solutions may occur in
+any order.  There may also be duplicate solutions.
+
+
+RUNNING THE TESTS
+-----------------
+
+The test suite can be running using the ``run-tests'' script contained in
+the scripts directory.  This script was designed for use with G12's
+FlatZinc implementation so it may require some adaptation if you choose to
+use it.
+
+NOTE: the run-tests script makes use of the .opt files.  These files
+currently contain command line options specific to G12's FlatZinc
+implementation.  If these conflict with your implementation you should
+delete them.
+
+
+FLATZINC BUILT-IN REDEFINITIONS
+-------------------------------
+
+Because redefinition occurs at the MiniZinc level (during flattening)
+it is not possible to run those tests in the suite that use built-ins
+defined via redefinition.
+
+
+TODO
+----
+
+* add a suite of tests covering valid and invalid syntax.
+* add a suite of tests covering warnings that the are required by
+  the specification.
+* add suites of tests specific to particular types of solver: SAT, FD,
+  FD set, MIP, IC etc.
+* Provide a method of canonicalising all-solutions output where we don't
+  care about the order of the solutions (this should also remove duplicate
+  solutions).
+* Provide a more implementation agnostic way of running the tests.
+
+
+FEEDBACK
+--------
+
+Bugs can be reported via the G12 bug tracking system at
+<http://bugs.g12.csse.unimelb.edu.au>.
+
+Comments, questions and suggests should be sent to the G12 Users mailing list.
+You can subscribe to the list by sending an e-mail containing the word
+"subscribe" in the body to "g12-users-request@csse.unimelb.edu.au".
+Thereafter, mail may be sent to "g12-users@csse.unimelb.edu.au".

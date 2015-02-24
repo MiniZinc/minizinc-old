@@ -1,0 +1,2 @@
+var bool: x :: __foo;
+solve satisfy;

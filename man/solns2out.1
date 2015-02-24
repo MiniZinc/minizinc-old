@@ -1,0 +1,75 @@
+.TH SOLNS2OUT 1 "@FULLDATE@" "" "G12 User's Manual"
+
+.SH NAME
+solns2out \- MiniZinc solution printing tool
+
+.SH SYNOPSIS
+.B solns2out
+[
+.BR OPTIONS " ]"
+.I model.ozn
+[
+.I solutions
+]
+
+.SH DESCRIPTION
+Print each solution in a FlatZinc output stream using the model output
+specification for the corresponding MiniZinc model instance to format
+the output.
+If no file containing the FlatZinc solution stream is named on the command
+line then it will be read from the standard input.
+.PP
+Normal output is written to the standard output; error messages are written
+to the standard error.
+
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Print this message.
+.TP
+.B \-\-version
+Print version information.
+.TP
+.B \-o <file>, \-\-output\-to\-file <file>
+Write output to the specified file rather than to the standard output.
+.TP
+.B \-\-no\-output\-comments
+Do not print comments in the FlatZinc solution stream.
+.TP
+.B \-i <n>, \-\-ignore\-lines <n>, \-\-ignore\-leading\-lines <n>
+Ignore the first <n> lines in the FlatZinc solution stream.
+.TP
+.B \-\-soln\-sep <separator>, \-\-soln-separator <separator>, \-\-solution\-separator <separator>
+Specify the string used to separate solutions.
+The default is to use the FlatZinc solution separator, "\-\-\-\-\-\-\-\-\-\-".
+.TP
+.B \-\-unsat\-msg <msg>, \-\-unsatisfiable\-msg <msg>
+Specify the message to print if the model instance is unsatisfiable.
+The default is to print "=====UNSATISFIABLE=====".
+.TP
+.B \-\-unbounded\-msg <msg>
+Specify the message to print if the objective of the model instance is unbounded.
+The default is to print "=====UNBOUNDED=====".
+.TP
+.B \-\-unknown\-msg <msg>
+Specify the message to print if search terminates without the entire search
+space have been explored and no solution has been found.
+The default is to print "=====UNKNOWN=====".
+.TP
+.B \-\-search\-complete\-msg <msg>
+Specify the message to print if search terminates having explored
+the entire search space.
+The default is to print "==========".
+
+.SH "VERSION INFORMATION"
+This manual page document
+.B solns2out
+version @MZN_SIMPLE_VERSION@.
+
+.SH AUTHORS
+The G12 team.
+
+.SH "SEE ALSO"
+.BR flatzinc (1),
+.BR minizinc (1),
+.BR mzn2fzn (1)

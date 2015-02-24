@@ -1,0 +1,8 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fdlp_canon
+
+var 0..3: x1 :: output_var;
+var float: x2 :: output_var;
+constraint array_float_element(2, [1.0, 2.0, 3.0], 2.0);
+constraint array_float_element(x1, [0.0, 1.0], x2);
+solve satisfy;

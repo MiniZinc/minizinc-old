@@ -1,0 +1,2 @@
+predicate foo(int: _x);
+solve satisfy;

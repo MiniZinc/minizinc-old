@@ -1,0 +1,8 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_fdlp
+% RUNS ON fzn_lp
+var float: x1 :: output_var;
+var float: x2 :: output_var;
+constraint float_eq(x1, -42.0);
+constraint float_eq(x2, 69.0);
+solve satisfy;

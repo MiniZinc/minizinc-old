@@ -1,0 +1,23 @@
+% RUNS ON fzn_fd_canon
+
+% Check that valid variable parameter names are accepted.
+
+bool: b = true;
+bool: _b = true;
+bool: __b = true;
+bool: B = true;
+bool: _B = true;
+bool: __B = true;
+var bool: bv;
+var bool: _bv;
+var bool: __bv;
+array[1..3] of bool: ba = [true, true, true];
+array[1..3] of bool: _ba = [true, false, false];
+array[1..3] of bool: __ba = [true, false, true];
+array[1..3] of var bool: bva;
+array[1..3] of var bool: _bva;
+array[1..3] of var bool: __bva;
+constraint bool_eq(__ba[1], _ba[1]);
+constraint bool_eq(_b, __b) :: defines_var(__b);
+
+solve satisfy;

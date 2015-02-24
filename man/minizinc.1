@@ -1,0 +1,282 @@
+.TH MINIZINC 1 "@FULLDATE@" "" "G12 User's Guide"
+
+.SH NAME
+minizinc \- MiniZinc evaluation driver
+
+.SH SYNOPSIS
+.B minizinc
+[
+.BR OPTIONS " ]"
+.I model.mzn
+[
+.IR data.dzn " ..."
+]
+
+.SH DESCRIPTION
+.B minizinc
+is a program that automates the evaluation of a MiniZinc model.
+It invokes the programs necessary to convert MiniZinc into FlatZinc, evaluate
+that FlatZinc, and then format and print the output.
+.PP
+Additionally,
+.B minizinc
+can be used to generate visualization using CP\-Viz (if used with
+a FlatZinc implementation that can generate CP\-Viz trace logs.)
+
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Display usage information.
+.TP
+.B \-\-version
+Print version information.
+.TP
+.B \-v, \-\-verbose
+Output progress information as compilation proceeds.
+.TP
+.B \-\-flags\-file <file>
+Take the options from the specified file and handle them as if they
+were specified on the command line.
+.TP
+.B \-k, \-\-keep\-files
+Do not delete intermediate files generated during evaluation.
+
+.SH "FLATTENING OPTIONS"
+.TP
+.B \-\-mzn2fzn\-cmd <cmd>
+Specify the command used to invoke the MiniZinc-to-FlatZinc converter.
+The default command is: mzn2fzn.
+.TP
+.B \-D <data>, \-\-cmdline\-data <data>
+Include the given data in the model.
+.TP
+.B \-I <dir>, \-\-search\-dir <dir>
+Append <dir> to the list of search directories in which to search
+for included files.
+.TP
+.B \-G <dir>, \-\-globals\-dir <dir>, \-\-minizinc\-globals\-dir <dir>
+Search for included files in <stdlib>/<dir>.
+.TP
+.B
+\-\-std\-globals, \-\-force\-standard\-globals
+Clear the list of globals directories.
+.TP
+.B \-d <file>, \-\-data <file>
+The specified file contains data used by the model.
+.TP
+.B \-\-no\-optimise, \-\-no\-optimize
+Do not run the optimiser on the generated FlatZinc.
+(This may speed up flattening of very large models.)
+.TP
+.B \-\-restrict\-includes
+Do not allow absolute paths or '..' in include items.
+
+.SH "EVALUATION OPTIONS"
+.TP
+.B \-f <cmd>, \-\-flatzinc-cmd <cmd>
+Specify the command used to invoke the FlatZinc interpreter.
+The default command is: flatzinc.
+.TP
+.B
+\-\-fzn\-flags <options>, \-\-flatzinc\-flags <options>
+Specify the option to be passed to the FlatZinc interpreter.
+\-\-fzn\-flag <option>, \-\-flatzinc\-flag <option>
+As above, but for options that are single words that need to be quoted
+when passed to the shell.
+.TP
+.B \-b <backend>, \-\-backend <backend>, \-\-solver\-backend <backend>
+Select the solver(s) and evaluation algorithm used by the FlatZinc
+interpreter.
+.TP
+.B \-c, \-\-canonicalize
+Canonicalize the FlatZinc solution stream.
+Note that this option prevents incremental printing of solutions.
+.TP
+.B \-n <n>, \-\-num-\-solutions <n>
+An upper bound on the number of solutions to output."
+The default is: 1.
+.TP
+.B \-a, \-\-all\-solns, \-\-all\-solutions
+Print all solutions.
+.TP
+.B \-s\, \-\-statistics, \-\-solver\-statistics
+Request that the FlatZinc interpreter emit statistical information
+gathered by the solver(s) with each solution in the form of comments.
+.TP
+.B \-p <n>, \-\-parallel <n>
+Use multiple threads and/or cores during search.
+The argument specifies the number of cores available.
+.TP
+.B \-r <seed>, \-\-seed <seed>, \-\-random\-seed <seed>
+Seed the interpreter's random number generator (if any) with the
+given value.  The form of the seed is implementation\-dependent.
+
+.SH "OUTPUT OPTIONS"
+.TP
+.B \-o <file>, \-\-output\-to\-file <file>
+Print solutions to the specified file rather than to the standard
+output.
+.TP
+.B \-\-no\-output\-comments
+Do not print comments in the FlatZinc solution stream.
+.TP
+.B \-i <n>, \-\-ignore\-lines <n>, \-\-ignore\-leading\-lines <n>
+Ignore the first <n> lines in the FlatZinc solution stream.
+.TP
+.B \-\-soln\-sep <separator>, \-\-soln-separator <separator>, \-\-solution\-separator <separator>
+Specify the string used to separate solutions.
+The default is to use the FlatZinc solution separator, "\-\-\-\-\-\-\-\-\-\-".
+.TP
+.B \-\-unsat\-msg <msg>, \-\-unsatisfiable\-msg <msg>
+Specify the message to print if the model instance is unsatisfiable.
+The default is to print "=====UNSATISFIABLE=====".
+.TP
+.B \-\-unbounded\-msg <msg>
+Specify the message to print if the objective of the model instance is unbounded.
+The default is to print "=====UNBOUNDED=====".
+.TP
+.B \-\-unknown\-msg <msg>
+Specify the message to print if search terminates without the entire search
+space have been explored and no solution has been found.
+The default is to print "=====UNKNOWN=====".
+.TP
+.B \-\-search\-complete\-msg <msg>
+Specify the message to print if search terminates having explored
+the entire search space.
+The default is to print "==========".
+
+.SH "CP-VIZ OPTIONS"
+.TP
+.B \-z, \-\-viz, \-\-cpviz, \-\-use\-cpviz
+Generate a visualization using CP\-Viz.
+.TP
+.B \-\-java <cmd>
+Specify the command used to invoke the Java interpreter.
+The default is: java.
+
+.SH "FLATZINC INTERFACE"
+.B minizinc
+will invoke a FlatZinc implementation as follows:
+.PP
+.IR flatzinc-cmd
+[
+.IR OPTIONS " ]"
+.IR model.fzn
+.PP
+where
+.IR flatzinc-cmd
+is the name of the command used to invoke the FlatZinc implementation.
+The command used to invoke the FlatZinc implementation may be specified
+to
+.B minizinc
+using either the
+.B \-\-fzn\-cmd
+option or the
+.I FLATZINC_CMD
+environment variable.
+.PP
+By default, normal output from the FlatZinc implementation should be
+written to the standard output.
+.PP
+In order for incremental printing of solutions to work properly,
+FlatZinc implementations must flush the output stream after printing
+a solution.
+.PP
+All error and warning output should be written to the standard error.
+.PP
+A FlatZinc implementation should terminate with a non-zero exit status
+if an error occurs otherwise it should set its exit status to zero.
+.PP
+The following command line options can be passed to the FlatZinc
+implementation when invoked by the
+.B minizinc
+program:
+.TP
+.B \-a
+Output all solutions.
+.TP
+.B \-b <backend>
+If the FlatZinc implementation supports multiple evaluation methods, this
+option is used to select between them.
+Note: we do not encourage the use of this option; implementations
+should try to control such things using annotations in the model
+instead.
+.TP
+.B \-n <num-of-solutions>
+An upper bound on the number of solutions to print.
+This option is overridden by
+.BR \-a " option."
+The default is to display a single solution.
+.TP
+.B \-o <file>
+Output the solution stream to the specified
+.I file
+rather than to the standard output.
+.TP
+.B \-s
+Emit solver statistics in the form of comments in the
+FlatZinc solution stream.
+.TP
+.B \-p <n>
+Use multiple threads and/or cores during search.
+The argument
+.I n
+specifies the number of cores available.
+.TP
+.B \-z
+Write out trace logs suitable for use with CP\-Viz.
+An implementation that does not CP\-Viz should abort
+with a non\-zero exit status if invoked with this option.
+.TP
+.B \-r <seed>
+Seed the interpreter's random number generator (if any) with the
+given value.  The form of the seed is implementation\-dependent.
+.PP
+Additional command line options may be passed to the FlatZinc
+interpreter using the
+.BR \-\-flatzinc\-flags " and"
+.B \-\-flatzinc-flag
+options.
+
+.SH ENVIRONMENT
+.IP CPVIZ_HOME
+This must be set to the to the location of the CP\-Viz
+file
+.IR viz.jar .
+If not set, then the location of
+.I viz.jar
+must be included in the value of the
+.I CLASSPATH
+variable.
+
+.IP FLATZINC_CMD
+If set, specifies the command used to invoke the FlatZinc interpreter.
+Overrides the value of the
+.B \-\-flatzinc\-cmd
+option.
+
+.IP JAVA
+If set, specifies the command used to invoke the Java interpreter.
+Overrides the value of the
+.B \-\-java
+option.
+
+.IP MZN2FZN_CMD
+If set, specifies the command used to invoke the MiniZinc\-to\-FlatZinc converter.
+Overrides the value of the
+.B \-\-mzn2fzn\-cmd
+option.
+
+.SH "VERSION INFORMATION"
+This manual documents
+.B minizinc
+version @MZN_SIMPLE_VERSION@.
+
+.SH AUTHORS
+The G12 team.
+
+.SH "SEE ALSO"
+.BR flatzinc (1),
+.BR mzn2fzn (1),
+.BR solns2dzn (1),
+.BR solns2out (1)

@@ -1,0 +1,7 @@
+% RUNS ON flatzinc
+% RUNS ON fzn_lp
+% RUNS ON fzn_fdlp
+array [1..2] of var float: xs :: output_array([1..2]);
+constraint float_eq(xs[1], -42.0);
+constraint float_eq(xs[2], 69.0);
+solve satisfy;

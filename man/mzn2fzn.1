@@ -1,0 +1,235 @@
+.TH MZN2FZN 1 "@FULLDATE@" "" "G12 User's Guide"
+
+.SH NAME
+mzn2fzn \- a MiniZinc-to-FlatZinc converter
+
+.SH SYNOPSIS
+.B mzn2fzn
+[
+.BR OPTIONS " ]"
+.I model.mzn
+[
+.IR data.dzn " ..."
+]
+
+.SH DESCRIPTION
+.B mzn2fzn
+converts a MiniZinc model together with any required instance data
+into a FlatZinc instance.
+It also creates a model output specification for the model instance
+that can be for use with the
+.BR solns2out (1)
+tool to produce formatted output.
+.PP
+By default the FlatZinc instance is written to a file named
+.IR model.fzn ,
+and the model output specification is written to a file named
+.IR model.ozn .
+.PP
+Error messages are written to the standard error.
+
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Print usage information.
+.TP
+.B \-\-version
+Print version information.
+.TP
+.B \-v, \-\-verbose
+Output progress information as flattening proceeds.
+.TP
+.B \-V, \-\-very\-verbose
+Output detailed progrss information as flattening proceeds.
+.TP
+.B \-d <file>, \-\-data <file>
+File named <file> contains data used by the model.
+.TP
+.B \-D <data>, \-\-cmdline-data <data>
+Include the given data in the model.
+.TP
+.B \-I <dir>, \-\-search\-dir <dir>
+Append <dir> to the list of search directories.
+.TP
+.B \-e, \-\-model\-check\-only
+Check the model (without requiring data) for errors, but do not
+convert to FlatZinc.
+.TP
+.B \-\-instance\-check\-only
+Check the model instance (including data) for errors, but do not
+convert to FlatZinc.
+.TP
+.B \-\-flags\-file <file>
+Take options from the specified file, and handle them as if they
+were specified on the command line.
+.TP
+.B \-\-output\-to\-stdout
+Output the FlatZinc to the standard output rather than to the
+file <model>.fzn.
+.TP
+.B \-o <file>, \-\-output\-to\-file <file>
+Output the FlatZinc to the specified file rather than to the file
+<model>.fzn.  This option may not be specified together with the
+\-\-output\-to\-stdout option.
+.TP
+.B \-\-stdlib\-dir <dir>, \-\-mzn\-stdlib\-dir <dir>, \-\-minizinc\-stdlib\-dir <dir>
+Specify an alternative MiniZinc standard library directory.
+.TP
+.B \-G <dir>, \-\-globals\-dir <dir>, \-\-mzn\-globals\-dir <dir>, \-\-minizinc\-globals\-dir <dir>
+Search for included files in <stdlib>/<dir>.
+Directories containing solver\-specific global constraints for use with
+each of the G12 FlatZinc interpreter\'s solver backends are:
+.B g12_fd
+for the finite\-domain solver backend;
+.B g12_lazyfd
+for the lazy clause generation solver backend;
+.B linear
+for the LP/MIP solver backend.
+.TP
+.B \-\-std\-globals, \-\-force\-standard\-globals
+Clear the list of globals directories.
+.TP
+.B \-\-no\-optimise
+Do not run the optimiser on the generated FlatZinc (this
+may speed up generation of very large models).
+.TP
+.B \-\-restrict\-includes
+Do not allow absolute paths or '..' in include items.
+
+.SH OUTPUT OPTIONS
+.TP
+.B \-O\-, \-\-no\-output\-ozn
+Do not output a model output specification.
+.TP
+.B \-\-output\-base <name>
+Use the specified name as the base name for generated files.
+.TP
+.B \-o <file>, \-\-output\-to\-file <file>, \-\-output\-fzn\-to\-file <file>
+Output the generated FlatZinc to the specified file.
+.TP
+.B \-\-output\-ozn\-to\-file <file>
+Output the model output specification to the specified file.
+.TP
+.B \-\-output\-to\-stdout, \-\-output\-fzn\-to\-stdout
+Output the FlatZinc to the standard output rather than to a file.
+.TP
+.B \-\-output\-ozn\-to\-stdout
+Output the model output specification to the standard output rather
+than to a file.
+
+.SH DEBUGGING OPTIONS
+.TP
+.B \-S, \-\-statistics
+Output messages about time/space usage to stderr.
+.TP
+.B \-\-pprint\-before <name>
+Pretty\-print the IR before stage <name>.
+.TP
+.B \-\-pprint\-after <name>
+Pretty\-print the IR after stage <name>.
+.TP
+.B \-\-pprint\-ignore\-file <file>
+Ignore items from <file> when pretty\-printing.
+.TP
+.B \-\-dump\-before <name>
+Dump the full IR before stage <name>.
+.TP
+.B \-\-dump\-after <name>
+Dump IR after stage <name>.
+.TP
+.B \-\-stop\-before <name>
+Stop compilation before stage <name>.
+.TP
+.B \-\-stop\-after <name>
+Stop compilation after stage <name>.
+.TP
+.B \-\-ignore\-stdlib
+Do not automatically include stdlib.mzn in the model.
+(Nb: some models will not compile correctly with this option.)
+
+.TP
+Valid stage names:
+parsing, top\-sorting, structure\-checking, type\-inst\-checking, flattening.
+
+.SH "FILE INCLUSION"
+
+.PP
+When an include item is processed
+.B mzn2fzn
+searches for the specified file in the following directories:
+first the current working directory, then any directories specified using
+the
+.B \-\-search\-dir
+option, then any directories specified using the
+.B \-\-globals\-dir
+option and finally in the MiniZinc standard library directory. 
+
+.PP
+The first instance of an included file that is encountered will be used.
+Every search for an included file, including those that are transitively
+included, proceeds as above.
+
+.PP
+If multiple
+.B \-\-search\-dir
+options are given then those directories
+will be searched in the order in which the
+.B \-\-search\-dir
+options occur on the command line.
+The same applies if there are multiple
+.B \-\-globals\-dir
+options.
+
+.PP
+The
+.B \-\-globals\-dir
+option is similar to the
+.B \-\-search\-dir
+option except that its argument is used to specify
+a directory that is relative to the root of the MiniZinc standard
+library.
+The purpose of this is to allow directories to be added to the
+MiniZinc standard library that contain FlatZinc implementation\-specific
+versions of global constraints that override the default definitions.
+
+.SH "CONTROL OVER FLATTENING"
+
+.PP
+If a predicate
+.BR "p_reif(..., var bool: b)"
+is defined then it will be used
+wherever an application
+.BR "p(...)"
+appears in a reified context.
+This is useful when the reified form of a global constraint is required, but
+not supported by the backend solver.
+
+.PP
+Redefinitions of FlatZinc built-in constraints can be supplied as predicates
+in a MiniZinc model.  This is useful to reduce the number of kinds of
+primitive constraints that the generated FlatZinc contains (e.g., replacing
+.BR "int_gt(x, y)" " with"
+.BR "int_lt(y, x)" ).
+The current implementation does not check for cycles in definitions introduced
+in this way, hence it is advisable to only redefine FlatZinc built\-ins in
+terms of other FlatZinc built\-ins.
+The current implementation requires that bodyless predicate definitions be
+provided for any FlatZinc built\-ins that are used within a redefinition.
+In the above example, we would need to provide a bodyless predicate definition
+for
+.BR "int_lt/2" .
+
+.SH VERSION INFORMATION
+This manual page documents
+.B mzn2fzn
+version @MZN_SIMPLE_VERSION@.
+
+.SH AUTHORS
+The G12 team.
+
+.SH "SEE ALSO"
+.BR flatzinc (1),
+.BR minizinc (1),
+.BR solns2out (1)
+.PP
+.I Specification of Zinc and MiniZinc

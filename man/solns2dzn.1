@@ -1,0 +1,69 @@
+.TH SOLNS2DZN 1 "@FULLDATE@" "" "G12 Users's Manual"
+
+.SH NAME
+solns2dzn \- FlatZinc output processing tool
+
+.SH SYNOPSIS
+.B solns2dzn
+[
+.BR OPTIONS " ]"
+[
+.IR solutions " ]"
+
+.SH DESCRIPTION
+.B solns2dzn
+is a tool for processing the output of FlatZinc implementations.
+It has four modes of operation: (1) write each solution in some
+FlatZinc output into a separate MiniZinc data file, (2) canonicalise the
+output of a FlatZinc implementation by sorting the solutions, (3) output
+the first solution in some FlatZinc output as MiniZinc data, and (4)
+output the last solution in some FlatZinc output as MiniZinc data.
+By default duplicate solutions are removed.
+.PP
+If no input file is specified then the input is read from the standard
+input.
+.PP
+It is an error if no mode of operation is specified.
+
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Print this message.
+.TP
+.B \-\-version
+Print version information.
+
+.SH "MODES OF OPERATION"
+.TP
+.B \-c, \-\-canonicalise
+Output a canonicalised form of the input.
+.TP
+.B \-f, \-\-first\-soln, \-\-first\-solution
+Output the first solution in a FlatZinc solution stream.
+.TP
+.B \-l, \-\-last\-soln, \-\-last\-solution
+Output the last solution in a FlatZinc solution stream.
+.TP
+.B \-s, \-\-split\-solns, \-\-split\-solutions
+Output each solution to a separate file.
+
+.SH "OTHER OPTIONS"
+.TP
+.B \-d\-, \-\-no\-delete\-dups, \-\-no\-delete\-duplicates
+Do not delete duplicate solutions.
+.TP
+.B \-b <base>, \-\-base <base>, \-\-output\-base <base>
+Use the argument as the base of the files created when writing solutions
+to separate files.
+.TP
+.B \-o <file>, \-\-output\-to\-file <file>
+Write output to the specified file rather than to the standard output.
+This option is ignored when splitting solutions.
+
+.SH "VERSION INFORMATION"
+This manual page documents
+.B soln2dzn
+version @MZN_SIMPLE_VERSION@.
+
+.SH AUTHORS
+The G12 team.
