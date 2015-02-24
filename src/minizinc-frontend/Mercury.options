@@ -1,0 +1,13 @@
+include ../../../Mercury.options.common
+
+# The variables above can also be overridden by the contents of the
+# following file in the current directory.
+-include Mercury.params
+
+GRADEFLAGS      = --grade $(GRADE)
+MCFLAGS		= $(MCFLAGS_STD)				\
+		  $(OPTIMIZE)
+
+include Frontend.workarounds
+
+MCFLAGS-g12_zinc_frontend = --no-warn-nothing-exported --no-warn-interface-imports

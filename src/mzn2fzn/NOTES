@@ -1,0 +1,203 @@
+NOTES ON MZN2FZN
+
+This is a collection of notes (TODO, OVERVIEW, etc.) concerning mzn2fzn.
+
+TODO
+
+This is a list of things that I would recommend improving at some point.
+There are no outstanding bugs of which I am aware.
+
+- flatten.env.m:var_info_map: each var_info_map stores information about some
+  variable (name, type, bounds, etc.) in a map.  This was a bad idea and it
+  should be replaced with a structure with fields, using default values where
+  appropriate.
+
+- flatten.env.m:int_range: int and set bounds really, really should be handled
+  using Mark Brown's ranges type rather than a discriminated union
+  distinguishing between unbounded intervals, single-range intervals,
+  and sets of discrete values.
+
+- flatten.env.m: variable bounds are recorded both in the {int,float}_{lb,ub}
+  fields of the var_info_map as well as in the var_type field of the
+  var_info_map. This is redundant and it may be worth using a different
+  representation.
+
+- flatten.env.m:add_constraint adds new constraints to a set_tree234
+  in the env structure, in a bid to avoid adding duplicate constraints
+  to the model.  It would be a good idea to try canonicalizing these
+  constraints first (e.g., sorting the arguments to int_lin_eq) to try
+  to catch more cases.
+
+- flatten.env.m:cse_lookup and add_cse_var: should do the same thing (i.e.,
+  canonicalize constraints where possible).  [The env_cse_map field of the
+  env structure is used to avoid creating duplicate intermediate variables
+  and constraints for the same expression.]
+
+- flatten.env.m:optimise_flatzinc: this is a propagation-style optimiser
+  for FlatZinc which alternates between substituting values for variables,
+  where known, (a variable can be used in a constraint before the flattener
+  realises it has a known value due to the one-pass nature of the flattening
+  algorithm), and revisiting affected constraints in search of further
+  optimisation opportunities.
+
+  - The substitute_for_var_in_globals predicate traverses the entire
+    list of global vars looking for occurrences in assignments of the variable
+    being substituted away.  If the model has many variables, this is costly.
+    It may well be better to track which variables have assignments referring
+    to which other variables, in order to better direct this predicate.
+    This is already done for connecting variables to constraints (see
+    prepare_optimisation and connect_constraint_vars_to_constraint_id).
+
+  - The reconsider_affected_constraints predicate currently does nothing.
+    This needs filling in (e.g., bool_and(X, Y, true) can be removed and
+    replaced with the substitution [X -> true, Y -> true]).
+
+  - Support is there for optimising on variable bounds changes, but this
+    is not used at present.  It's not clear if this is a great idea.
+
+- If you are feeling very brave, it *may* be a good idea to move away from a
+  typed MiniZinc expression representation and have the flattener use an
+  untyped representation annotated with types.  I think this is what I tried
+  in the first version of mzn2fzn and decided against the approach with the
+  following (current) version.  Both schemes have their drawbacks and, even
+  with hindsight, it's still not clear to me which is the better option.
+
+OVERVIEW OF FLATTENING
+
+The flattener essentially takes a one-pass approach, doing the "obvious thing"
+at each point: variable declarations update the variable records in the 'env'
+environment structure (see flatten.env.m) and constraint items update the
+constraints set and, possibly, the variable records.
+
+Constraints are flattened using the expression flattening code (see
+flatten.expr.m).  The env structure tracks whether an expression is being
+flattened in a reifying context (such as a negation) or not.
+
+The final pass is a propagation-style optimiser.  Currently this simply
+prunes redundant variables from the model, but it has hooks for further
+simplifying affected constraints.
+
+REIFICATION CONTEXTS
+
+In a non-reifying context, primitive constraints (such as int_plus and bool_or)
+are added directly to the FlatZinc model.
+
+In a reifying context, the reified form is used for user defined predicates
+and partial functions (e.g., division, element) and any extra reification
+variables are recorded in the env structure to be handled at the point where
+the parent expression is being flattened.
+
+INTERMEDIATE EXPRESSIONS
+
+The flattener goes to some lengths to avoid introducing temporary variables
+during the pass over the MiniZinc model.  This mainly involves preserving
+(most of) the structure of int, float, and bool expressions.  These are
+"simplified" (see, e.g. flatten.int.simplify_int) wherever a FlatZinc
+expression is required (i.e. a constant or a variable with no coefficient).
+This means that an expression such as 3*x + 4*y - 2*z will be handled using
+a single int_lin_x constraint rather than a collection of int_times and
+int_plus constraints held together with intermediate variables.  Only minor
+simplification of expressions is performed as they are built up; full
+simplification is left to the simplify_int (etc.) predicates.  The reason
+for this is that some models construct very large linear expressions and
+simplifying as each term is added leads to O(n^2) performance, rather than
+O(n log n) which is what the "simplify late" approach gives us.
+
+TYPE-SPECIFIC FLATTENING AND TEMPORARY VARIABLES
+
+Each type is largely handled by a separate submodule (flatten.bool.m,
+flatten.float.m, flatten.int.m, etc).  The main points of entry to these
+modules are:
+
+(i) the temporary variable construction predicates (e.g. for ints ...)
+  - make_tmp_int_var just adds a new, unassigned, int global variable to the
+    'env';
+  - add_tmp_int_var adds a new, int global variable to the 'env' and a
+    constraint to construct that variable (the new int var is appended to
+    the constraint's argument list, so this only works for constraints
+    such as int_plus which have their "output" arguments in the last place).
+    If the same constraint has already been added before, then the
+    previous temporary variable is returned (rather than creating a new
+    variable and constraint).
+    Note that no canonicalisation of constraints is done at present - see the
+    TODO notes above.
+(ii) The expression flattening predicates, such as flatten_int_int_to_int.
+  These predicates go to some lengths to do the sensible thing.
+
+The flattener also goes to some lengths to refine the bounds on variables
+(how bounds are represented in the 'env' structure could benefit from some
+reengineering - see the TODO notes above).  I have covered all the main
+cases, although there are probably opportunities for fine tuning there.
+
+SETTING AND REFINING BOUNDS
+
+Low-level predicates are refine_int_bounds, refing_int_lb, and refine_int_ub
+(similarly for the other types).  These work directly on the bounds of
+variables stored in var_info_map structures.
+
+High-level bounds setting (which are used in most places) takes
+reification status etc. into account and is handled by flattening an
+inequality (e.g., flatten_int_int_to_bool(ErrorContext, "<=", Anns,
+int_var(IntVar), int_const(10), Z, !Env) with Z being the bool_expr
+result of flattening IntVar <= 10).
+
+There are (presently unused) hooks in the FlatZinc optimiser (see the end of
+flatten.env.m) to support further simplification of the generated FlatZinc
+constraints which may lead to tightened bounds on variables.  The optimiser
+has more opportunity for this kind of thing since it is not restricted to
+a single pass of the model.
+
+FLATTENING EXPRESSIONS AND PREDICATES
+
+Zinc AST expressions are flattened using flatten.expr.flatten_expr and
+flatten_expr.expr.flatten_expr_reified (there are some cases where reification
+must take place, such as when flattening predicate arguments).
+
+Specific applications of operators or predicate names are handled by
+flatten.expr.flatten_app.  flatten_app handles some symbols specially
+(e.g., "assert", "show", "fix").
+
+FlatZinc primitive predicates may be redefined in the model (see e.g.,
+zinc/lib/minizinc/<backend>/redefinitions.mzn).  flatten.env.add_constraint
+checks for this situation and reinvokes flatten_predicate if a redefinition
+is found.
+
+VARIABLES
+
+The 'env' structure splits variables into the env_globals and env_locals
+fields.  env_globals contains all variables in the model and all top-level
+constants.  env_locals contains bindings for predicate argument names and
+let-variable names where the let-variable is an alias for some expression.
+New global variables are only introduced in the following cases:
+- where a global variable is declared in the model;
+- where a temporary variable is introduced during flattening (e.g.,
+  reification variables);
+- where a let variable is declared with no assignment (the let-bound local
+  is mapped to the new global variable in the env_locals mapping);
+- as an intermediate variable representing the simplified form of an
+  expression (e.g., the result of a non-linear multiplication expression).
+
+Variables are typically represented as mzn_vars, which come in two flavours:
+var_no_index(var_id) and var_index(var_id, int), the latter for subscripted
+array variables.  The var_id type is an alias for zinc.common.id which is
+a pair consisting of a variable name and a "scope number".  You can't get
+rid of the scope number because that leads to confusion in the flattener
+when you get a predicate parameter or let variable with the same name as a
+global variable.
+
+ARRAYS AND SETS
+
+When dereferencing array and set variables, the value is not fully
+dereferenced if it would produce a literal value.  This is done to avoid
+duplicating literal array values throughout the model.  The downside is
+that array and set handling code has to be careful to retrieve the literal
+value when it is required (e.g., for generator expressions and flattening
+things like set union expressions where both sets are known).
+
+In some cases, flattening would prefer to manifest a set literal.  However,
+the current representation of int sets is rather crude (a Mercury ordered
+set), so there are checks to see if the set contains more than 1000 items
+before proceeding (an exception is usually thrown in this case).  Mark's
+interval list representation would be a much better choice for representing
+int sets (and all other int ranges, for that matter) (see the TODO notes
+above).

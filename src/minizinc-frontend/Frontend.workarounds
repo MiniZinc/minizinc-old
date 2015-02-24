@@ -1,0 +1,9 @@
+# This file contains module specific workarounds for problems
+# in the Zinc frontend code.
+
+# This works around Mercury bug #57.
+MCFLAGS-zinc_parser = --no-common-struct
+
+# Don't warn abuot string.unsafe_substring being obsolete.
+#
+MCFLAGS-zinc_lexer = --no-warn-obsolete
