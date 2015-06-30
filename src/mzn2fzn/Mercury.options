@@ -1,10 +1,5 @@
 include ../minizinc-frontend/Frontend.workarounds
 
-
-# NOTE: any workarounds here also need to be added to
-# g12/zinc/package_info/mzn_dist/src/mzn2fzn/Mercury.options, which is the
-# version of the options file we distribute with the mzn2fzn source code.
-#
 MCFLAGS-flatten.array = --no-warn-inferred-erroneous
 MCFLAGS-hr.array = --no-warn-inferred-erroneous
 MCFLAGS-global_vars = --no-warn-obsolete
