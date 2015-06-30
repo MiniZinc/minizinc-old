@@ -24,7 +24,7 @@
 % XXX: we don't actually canonicalise the solution (other than stripping
 % trailing whitespace).  We could use the frontend libs to do this but it
 % doesn't seem necessary at the moment.  (And assuming FlatZinc implementations
-% actually stick to the spec w.r.t output it shouldn't be necessary.) 
+% actually stick to the spec w.r.t output it shouldn't be necessary.)
 %
 %-----------------------------------------------------------------------------%
 
@@ -158,7 +158,7 @@ main_3(OptionTable, NonOptionArgs, !IO) :-
     ;
         NonOptionArgs = [_, _ | _],
         bad_cmdline(["error: more than one file specified"], !IO)
-    ).        
+    ).
 
 %-----------------------------------------------------------------------------%
 %
@@ -168,7 +168,7 @@ main_3(OptionTable, NonOptionArgs, !IO) :-
 :- type action
     --->    action_canonicalise
     ;       action_first_solution
-    ;       action_last_solution 
+    ;       action_last_solution
     ;       action_split.
 
 :- type maybe_action
@@ -270,16 +270,16 @@ do_read_solutions(Src, CurrentPartialSoln, !SolnInfo, !IO) :-
         ReadLineResult = ok(Line0),
         Line = string.strip(Line0),
         ( if Line = "" then
-            
+
             % Ignore blank lines.
             do_read_solutions(Src, CurrentPartialSoln, !SolnInfo, !IO)
-          
-          else if  string.first_char(Line, '%', _) then 
+
+        else if  string.first_char(Line, '%', _) then
 
             % Ignore comments.
             do_read_solutions(Src, CurrentPartialSoln, !SolnInfo, !IO)
 
-          else if Line = "----------" then
+        else if Line = "----------" then
 
             % CurrentPartialSoln has the lines in this solution reversed.
             % Put them back around the right way before adding them to
@@ -289,8 +289,8 @@ do_read_solutions(Src, CurrentPartialSoln, !SolnInfo, !IO) :-
             !SolnInfo ^ si_solns := Solns,
             do_read_solutions(Src, [], !SolnInfo, !IO)
 
-          else if  Line = "==========" then
-            
+        else if  Line = "==========" then
+
             (
                 CurrentPartialSoln = []
             ;
@@ -299,8 +299,8 @@ do_read_solutions(Src, CurrentPartialSoln, !SolnInfo, !IO) :-
             ),
             !SolnInfo ^ si_complete := search_complete_sat
 
-          else if Line = "=====UNSATISFIABLE=====" then
-            
+        else if Line = "=====UNSATISFIABLE=====" then
+
             (
                 CurrentPartialSoln = []
             ;
@@ -309,8 +309,8 @@ do_read_solutions(Src, CurrentPartialSoln, !SolnInfo, !IO) :-
             ),
             !SolnInfo ^ si_complete := search_complete_unsat
 
-          else
-            
+        else
+
             % If it's not any of the above then it forms part of the
             % output for an individual solution.
 
@@ -405,7 +405,7 @@ write_split_output(OptionTable, InputSrc, SolnInfo, !IO) :-
         MaybeBase = yes(OutputBase)
     ),
     list.foldl2(write_split_file(MaybeBase), Solns, 1, _, !IO).
-  
+
 :- pred write_split_file(maybe(string)::in, soln::in, int::in, int::out,
     io::di, io::uo) is det.
 
@@ -446,7 +446,7 @@ write_first_solution(OptionTable, SolnInfo, !IO) :-
         % first solution is the last one in the list.
         FirstSoln = list.det_last(Solns),
         write_single_solution(OptionTable, FirstSoln, !IO)
-    ).     
+    ).
 
 :- pred write_last_solution(option_table(solns2dzn_option)::in,
     soln_info::in, io::di, io::uo) is det.
@@ -460,7 +460,7 @@ write_last_solution(OptionTable, SolnInfo, !IO) :-
         % last solution is the first one in the list.
         Solns = [LastSoln | _],
         write_single_solution(OptionTable, LastSoln, !IO)
-    ).     
+    ).
 
 :- pred write_single_solution(option_table(solns2dzn_option)::in, soln::in,
     io::di, io::uo) is det.
@@ -645,7 +645,7 @@ solns2dzn_usage =
 ,   "    -l, --last, --last-solution"
 ,   "        Output the last solution in a FlatZinc solution stream."
 ,   "    -s, --split-solns, --split-solutions"
-,   "        Output each solution to a separate file." 
+,   "        Output each solution to a separate file."
 ,   ""
 ,   "Other options:"
 ,   "    -d-, --no-delete-dups, --no-delete-duplicates"
@@ -663,7 +663,7 @@ solns2dzn_usage =
 
 solns2dzn_version = VersionMsg :-
     Version = get_solns2dzn_version,
-    VersionMsg = 
+    VersionMsg =
         "G12 FlatZinc solution processing tool, version " ++ Version ++ "\n"
 ++      "Copyright (C) 2009-2012 The University of Melbourne and NICTA\n".
 
@@ -691,7 +691,7 @@ bad_cmdline(Msgs, !IO) :-
     io.write_string(Stderr, "solns2dzn: use --help for more information.\n",
         !IO),
     io.set_exit_status(1, !IO).
-            
+
 :- pred handle_bad_input_error(bad_input_error::in, io::di, io::uo) is det.
 
 handle_bad_input_error(BadInputError, !IO) :-
