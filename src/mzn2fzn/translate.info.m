@@ -279,14 +279,11 @@
 
 :- pred init_tr_info(tr_info::out) is det.
 
-:- pred tr_info_get_tmp_counters(tr_info::in, tmp_counters::out) is det.
 :- pred tr_info_get_cse_maps(tr_info::in, cse_maps::out) is det.
 :- pred tr_info_get_var_info_maps(tr_info::in, var_info_maps::out) is det.
 :- pred tr_info_get_constraints(tr_info::in, tfzn_constraint_set::out) is det.
 :- pred tr_info_get_errors(tr_info::in, list(error_spec)::out) is det.
 
-:- pred tr_info_set_tmp_counters(tmp_counters::in,
-    tr_info::in, tr_info::out) is det.
 :- pred tr_info_set_cse_maps(cse_maps::in,
     tr_info::in, tr_info::out) is det.
 :- pred tr_info_set_var_info_maps(var_info_maps::in,
@@ -704,6 +701,8 @@ init_tr_info(Info) :-
 
 %-----------------------------------------------------------------------------%
 
+:- pred tr_info_get_tmp_counters(tr_info::in, tmp_counters::out) is det.
+
 tr_info_get_tmp_counters(Info, TmpVarCounters) :-
     TmpVarCounters = Info ^ tri_tmp_counters.
 tr_info_get_cse_maps(Info, CSEMaps) :-
@@ -714,6 +713,9 @@ tr_info_get_constraints(Info, Constraints) :-
     Constraints = Info ^ tri_constraints.
 tr_info_get_errors(Info, Specs) :-
     Specs = Info ^ tri_errors.
+
+:- pred tr_info_set_tmp_counters(tmp_counters::in,
+    tr_info::in, tr_info::out) is det.
 
 tr_info_set_tmp_counters(TmpVarCounters, !Info) :-
     !Info ^ tri_tmp_counters := TmpVarCounters.
