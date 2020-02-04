@@ -892,7 +892,7 @@ make_int(Base, Src, I1, I, S) = Tok :-
         BigInt = integer.det_from_base_string(Base, SubS),
         ( if integer(int.min_int) =< BigInt,
              integer(int.max_int) >= BigInt then
-            Int = integer.int(BigInt),
+            Int = integer.det_to_int(BigInt),
             Tok = check_num_suffix(int(Int), "integer literal", Src, I1, I, S)
           else
             lex_error(Tok, "integer literal does not fit into " ++
@@ -948,21 +948,19 @@ make_string(RevChars) = Tok :-
 :- pred grab_substring(string::out, src::in, int::in, int::in) is det.
 
 grab_substring(SubS, Src, I1, I2) :-
-    Len = I2 - I1,
 % This check is disabled because it reduces parsing speed by about 10%.
 %    else_unexpected(0 =< I1,           "before start of string"),
 %    else_unexpected(I2 < Src ^ length, "past end of string"),
-    unsafe_substring(Src ^ text, I1, Len, SubS).
+    unsafe_between(Src ^ text, I1, I2, SubS).
 
 :- pred grab_substring_minus_first_and_last_chars(string::out, src::in,
         int::in, int::in) is det.
 
 grab_substring_minus_first_and_last_chars(SubS, Src, I1, I2) :-
-    Len = I2 - I1 - 2,
 % This check is disabled for consistency with 'grab_substring'.
 %    else_unexpected(0 =< I1,           "before start of string"),
 %    else_unexpected(I2 < Src ^ length, "past end of string"),
-    unsafe_substring(Src ^ text, I1+1, Len, SubS).
+    unsafe_between(Src ^ text, I1 + 1, I2 - 1, SubS).
 
 %-----------------------------------------------------------------------------%
 

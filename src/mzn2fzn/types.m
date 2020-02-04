@@ -542,7 +542,7 @@ mzn_constraint_set_empty(ConstraintSet) :-
     ConstraintSet = set_tree234.init.
 
 mzn_constraint_set_is_empty(ConstraintSet) :-
-    set_tree234.empty(ConstraintSet).
+    set_tree234.is_empty(ConstraintSet).
 
 mzn_constraint_set_singleton(Constraint, ConstraintSet) :-
     set_tree234.singleton_set(Constraint, ConstraintSet).

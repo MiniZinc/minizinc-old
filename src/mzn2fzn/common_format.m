@@ -436,7 +436,7 @@ format_index_range(index_range(LB, UB)) =
 %-----------------------------------------------------------------------------%
 
 format_mzn_anns(Anns) =
-    ( if set.empty(Anns) then
+    ( if set.is_empty(Anns) then
         ""
     else
         string.append_list(list.map(format_mzn_ann, set.to_sorted_list(Anns)))

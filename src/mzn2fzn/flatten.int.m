@@ -918,7 +918,7 @@ flatten_int_int_set_to_bool(Context, Anns, iis2b_in, A, B, CVZ, !Env) :-
                 % A already is in B.
                 CVZ = boolcv_const(yes)
             else if
-                set.empty(set.intersect(SetA, SetB))
+                set.is_empty(set.intersect(SetA, SetB))
             then
                 % A already is not in B.
                 CVZ = boolcv_const(no)
