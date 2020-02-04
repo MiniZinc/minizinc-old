@@ -216,13 +216,16 @@ options_to_action(OptionTable, MaybeAction, !IO) :-
         AllActions = [],
         MaybeAction = action_unspecified
     ;
-        AllActions = [Action],
-        MaybeAction = action_ok(Action)
-    ;
-        AllActions = [_, _ | _],
-        ActionStrs = list.map(action_to_option, AllActions),
-        ConflictingOpts = string.join_list(", ", ActionStrs),
-        MaybeAction = action_conflict(ConflictingOpts)
+        AllActions = [Action | AllActionsPrime],
+        (
+            AllActionsPrime = [],
+            MaybeAction = action_ok(Action)
+        ;
+            AllActionsPrime = [_ | _],
+            ActionStrs = list.map(action_to_option, AllActions),
+            ConflictingOpts = string.join_list(", ", ActionStrs),
+            MaybeAction = action_conflict(ConflictingOpts)
+        )
     ).
 
 :- func action_to_option(action) = string.
