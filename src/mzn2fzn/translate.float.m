@@ -75,7 +75,6 @@
 :- implementation.
 
 :- import_module bounds.
-:- import_module error_util.
 :- import_module mzn_ops.
 :- import_module translate.array.
 :- import_module translate.bool.
