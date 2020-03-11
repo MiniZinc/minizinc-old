@@ -216,14 +216,12 @@
 
 :- implementation.
 
-:- import_module errors.
 :- import_module hr.convert.
 :- import_module hr.float.
 :- import_module hr.int.
 :- import_module mzn_ops.
 
 :- import_module bool.
-:- import_module counter.
 :- import_module map.
 :- import_module string.
 

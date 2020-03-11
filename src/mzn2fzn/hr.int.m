@@ -89,7 +89,6 @@
 :- import_module common_array.
 :- import_module common_bounds.
 :- import_module common_expr.
-:- import_module global_vars.
 
 :- import_module intset.
 

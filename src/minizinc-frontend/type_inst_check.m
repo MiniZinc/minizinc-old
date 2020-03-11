@@ -156,7 +156,6 @@
 
 :- import_module builtins.
 :- import_module types_and_insts.
-:- import_module zinc_error.
 
 :- import_module assoc_list.
 :- import_module bool.

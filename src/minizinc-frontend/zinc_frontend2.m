@@ -32,7 +32,7 @@
 :- import_module io.
 
 %-----------------------------------------------------------------------------%
-    
+
     % do_analysis_stages(ErrorControl, ProgramName, StageNames, Lang,
     %   Checking, StageNameSuffix, DebugSpec, MaybeItems,
     %   MaybeItemsAndSymTbl, !IO):
@@ -79,10 +79,8 @@
 :- import_module elim_assigns.
 :- import_module structure_check.
 :- import_module type_inst_check.
-:- import_module zinc_pprint.
 
 :- import_module exception.
-:- import_module pair.
 :- import_module string.
 :- import_module unit.
 :- import_module univ.

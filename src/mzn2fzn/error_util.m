@@ -393,7 +393,6 @@
 :- import_module char.
 :- import_module cord.
 :- import_module int.
-:- import_module list.
 :- import_module require.
 :- import_module string.
 

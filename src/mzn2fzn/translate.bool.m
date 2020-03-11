@@ -42,7 +42,6 @@
 :- implementation.
 
 :- import_module bounds.
-:- import_module error_util.
 :- import_module mzn_ops.
 :- import_module output_common.
 :- import_module output_tfzn.
@@ -56,12 +55,10 @@
 :- import_module zinc_common.
 
 :- import_module assoc_list.
-:- import_module bool.
 :- import_module float.
 :- import_module int.
 :- import_module io.
 :- import_module map.
-:- import_module maybe.
 :- import_module pair.
 :- import_module require.
 :- import_module set.

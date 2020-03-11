@@ -68,7 +68,6 @@
 :- import_module builtin.
 :- import_module dir.
 :- import_module io.
-:- import_module list.
 :- import_module maybe.
 :- import_module pair.
 :- import_module string.
